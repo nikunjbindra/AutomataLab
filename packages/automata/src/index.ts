@@ -5,6 +5,16 @@ export * from './moore-to-mealy.js';
 export * from './simulation.js';
 export * from './equivalence.js';
 export * from './presets.js';
+export {
+  MANDATORY_TASK_6_MEALY,
+  EVEN_PARITY_MEALY,
+  EVEN_PARITY_MOORE,
+  SEQUENCE_101_MEALY,
+  SEQUENCE_010_MOORE,
+  BINARY_COUNTER_2BIT_MEALY,
+  MULTI_SPLIT_MEALY,
+  UNREACHABLE_STATE_MEALY,
+} from './presets.js';
 
 export const AUTOMATA_ENGINE_VERSION = '1.0.0';
 

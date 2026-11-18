@@ -113,3 +113,37 @@ AutomataLab adopts a **developer-tool aesthetic** inspired by the technical eleg
   - `rounded-md`: 6px (buttons, inputs, tooltips).
   - `rounded-lg`: 8px (cards, drawers, modal dialogs).
   - `rounded-full`: (nodes, badges, tape head indicator).
+
+---
+
+## 6. Implemented Phase 3 Components & Architecture
+
+### 6.1 Theme & Design Tokens
+- Managed by `ThemeProvider` (`apps/web/src/context/ThemeContext.tsx`).
+- Toggles the `.dark` class on `document.documentElement` and persists preference to `localStorage['automatalab_theme']`.
+- CSS custom variables defined in `apps/web/src/index.css`:
+  - `--bg-background`, `--bg-surface`, `--bg-surface-elevated`, `--bg-surface-hover`
+  - `--border-border`, `--border-subtle`
+  - `--text-primary`, `--text-secondary`, `--text-muted`
+
+### 6.2 Application Shell
+- `AppShell`: Persistent navigation with responsive sidebar, compact header, and scrollable main content outlet.
+- `Sidebar`: Collapsible sidebar navigation featuring active route indicators, Lucide icons, and status badges.
+- `AppHeader`: Breadcrumb location trail, live backend connectivity badge (`useHealthQuery`), and `ThemeToggle`.
+- `PageHeader`: Title, descriptive subtitle, breadcrumb navigation, and actionable header slots.
+
+### 6.3 Shared Data & Feedback Components
+- `StatusBadge`: Semantic badge system (`mealy`, `moore`, `success`, `warning`, `error`, `neutral`, `cyan`).
+- `DataTable`: Generic, accessible tabular grid with column renderers, sorting slots, and empty state fallbacks.
+- `EmptyState`: Clean empty state illustration with icon, title, description, and primary/secondary CTA buttons.
+- `LoadingState`: Subtle animated loader with contextual message and subtext.
+- `ErrorState`: Error banner with alert iconography and retry trigger.
+- `ConfirmDialog`: Modal overlay with keyboard focus trapping, Escape handling, and destructive styling support.
+
+### 6.4 Multi-Panel Workspace Foundation (`WorkspaceLayout`)
+- Multi-panel responsive grid architected for future phases:
+  - **Left Panel**: Machine configuration, state list, input/output alphabets, and transition matrix editor.
+  - **Center Panel**: Canvas for `@xyflow/react` interactive automata graphs with zoom/pan controls.
+  - **Right Panel**: Step-by-step conversion traces, state-splitting explanations, and invariant checks.
+  - **Bottom Panel**: Synchronous input/output simulation tape, timeline stepper, and transition logs.
+

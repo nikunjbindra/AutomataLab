@@ -11,13 +11,15 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@automatalab/contracts": "*",
     "@automatalab/automata": "*",
+    "@automatalab/contracts": "*",
+    "@tanstack/react-query": "^5.108.0",
     "@xyflow/react": "^12.4.4",
     "clsx": "^2.1.1",
     "lucide-react": "^0.475.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
+    "react-router-dom": "^7.18.5",
     "tailwind-merge": "^3.0.2"
   },
   "devDependencies": {

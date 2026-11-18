@@ -3,26 +3,54 @@
 @tailwind utilities;
 
 @layer base {
+  :root {
+    --bg-background: #ffffff;
+    --bg-surface: #f8fafc;
+    --bg-surface-elevated: #ffffff;
+    --bg-surface-hover: #f1f5f9;
+    --border-border: #e2e8f0;
+    --border-subtle: #f1f5f9;
+    --text-primary: #0f172a;
+    --text-secondary: #475569;
+    --text-muted: #94a3b8;
+  }
+
+  .dark {
+    --bg-background: #090a0f;
+    --bg-surface: #11131a;
+    --bg-surface-elevated: #171a24;
+    --bg-surface-hover: #1e2230;
+    --border-border: #222634;
+    --border-subtle: #1b1e2b;
+    --text-primary: #f1f5f9;
+    --text-secondary: #94a3b8;
+    --text-muted: #64748b;
+  }
+
   body {
-    @apply bg-background text-slate-100;
+    background-color: var(--bg-background);
+    color: var(--text-primary);
+    font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
 }
 
-/* Custom subtle scrollbar */
+/* Custom subtle developer-tool scrollbar */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #090a0f;
+  background: transparent;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #222634;
+  background: var(--border-border);
   border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #32384c;
+  background: var(--text-muted);
 }
