@@ -13,6 +13,16 @@ export interface DiagramSvgProps {
   activeTransition?: { from: string; to: string; input?: string } | null;
   highlightedEdge?: string | null; // e.g. "A->B:0" or "A->B"
   highlightedState?: string | null;
+  /** If provided, only these states are rendered opaque; others are ghosted (layout stays stable). */
+  visibleStates?: string[] | null;
+  /** If provided, only transitions whose fromState+toState are in this set are rendered opaque; others ghosted. */
+  visibleTransitionKeys?: string[] | null; // format: "from->to"
+  /** States to highlight as "conflict" (amber ring, used in Stage 2-3 of Mealy→Moore) */
+  conflictStates?: string[] | null;
+  /** If true, hide state outputs on Moore nodes (used in Stage 4-5 before outputs are revealed) */
+  hideOutputs?: boolean;
+  /** If true, show an empty-canvas placeholder overlay instead of the diagram */
+  showPlaceholder?: boolean;
   onStateClick?: (state: string) => void;
   onEdgeClick?: (from: string, to: string, input: string) => void;
   onEdgeHover?: (edgeKey: string | null) => void;
@@ -29,6 +39,11 @@ export const DiagramSvg: React.FC<DiagramSvgProps> = ({
   activeTransition,
   highlightedEdge,
   highlightedState,
+  visibleStates,
+  visibleTransitionKeys,
+  conflictStates,
+  hideOutputs,
+  showPlaceholder,
   onStateClick,
   onEdgeClick,
   onEdgeHover,
@@ -42,6 +57,20 @@ export const DiagramSvg: React.FC<DiagramSvgProps> = ({
   const mealy = machine as MealyMachine;
 
   const nodeRadius = 26;
+
+  // Build a stable Set of visible states/edges for progressive reveal
+  const visibleStateSet = React.useMemo(
+    () => (visibleStates ? new Set(visibleStates) : null),
+    [visibleStates]
+  );
+  const visibleEdgeSet = React.useMemo(
+    () => (visibleTransitionKeys ? new Set(visibleTransitionKeys) : null),
+    [visibleTransitionKeys]
+  );
+  const conflictStateSet = React.useMemo(
+    () => (conflictStates ? new Set(conflictStates) : null),
+    [conflictStates]
+  );
 
   // Intelligent collision-free layout
   const positions: Record<string, SvgNodePos> = React.useMemo(() => {
@@ -62,15 +91,15 @@ export const DiagramSvg: React.FC<DiagramSvgProps> = ({
       const aStates = states.filter((s) => s.startsWith('A') && s !== 'S');
       const bStates = states.filter((s) => s.startsWith('B'));
 
-      posMap['S'] = { x: 75, y: height / 2 };
+      posMap['S'] = { x: 65, y: height / 2 };
 
       if (aStates.length === 2) {
-        posMap[aStates[0]] = { x: 260, y: height * 0.28 };
-        posMap[aStates[1]] = { x: 260, y: height * 0.72 };
+        posMap[aStates[0]] = { x: 240, y: height * 0.26 };
+        posMap[aStates[1]] = { x: 240, y: height * 0.74 };
       }
       if (bStates.length === 2) {
-        posMap[bStates[0]] = { x: 460, y: height * 0.28 };
-        posMap[bStates[1]] = { x: 460, y: height * 0.72 };
+        posMap[bStates[0]] = { x: 425, y: height * 0.26 };
+        posMap[bStates[1]] = { x: 425, y: height * 0.74 };
       }
       // Fill any remaining
       states.forEach((s) => {
@@ -155,6 +184,18 @@ export const DiagramSvg: React.FC<DiagramSvgProps> = ({
         </div>
       )}
 
+      {/* Placeholder overlay for stages where target is not yet revealed */}
+      {showPlaceholder && (
+        <div className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-2 bg-surface/80 backdrop-blur-[2px]">
+          <div className="w-12 h-12 rounded-full border-2 border-dashed border-border-subtle flex items-center justify-center">
+            <span className="text-foreground-muted text-lg select-none">?</span>
+          </div>
+          <span className="text-[11px] font-mono text-foreground-muted text-center px-4">
+            Advance steps to reveal converted machine
+          </span>
+        </div>
+      )}
+
       <svg
         viewBox={`0 0 ${width} ${height}`}
         className="w-full h-full select-none"
@@ -204,6 +245,10 @@ export const DiagramSvg: React.FC<DiagramSvgProps> = ({
           const isSelfLoop = from === to;
           const reverseKey = `${to}->${from}`;
           const isBiDirectional = !isSelfLoop && groupedTransitions.has(reverseKey);
+
+          // Progressive reveal: ghost non-visible edges
+          const isEdgeVisible = !visibleEdgeSet || visibleEdgeSet.has(pairKey);
+          const edgeOpacity = isEdgeVisible ? 1 : 0.07;
 
           // Check if active
           const isActive =
@@ -277,6 +322,7 @@ export const DiagramSvg: React.FC<DiagramSvgProps> = ({
               <g
                 key={pairKey}
                 className="cursor-pointer group"
+                style={{ opacity: edgeOpacity, transition: 'opacity 0.4s ease' }}
                 onClick={() => onEdgeClick && onEdgeClick(from, to, transList[0].input)}
                 onMouseEnter={() => onEdgeHover && onEdgeHover(pairKey)}
                 onMouseLeave={() => onEdgeHover && onEdgeHover(null)}
@@ -285,7 +331,7 @@ export const DiagramSvg: React.FC<DiagramSvgProps> = ({
                   d={d}
                   fill="none"
                   className={`${strokeClass} transition-all duration-300`}
-                  markerEnd={marker}
+                  markerEnd={isEdgeVisible ? marker : 'url(#arrowhead-def)'}
                 />
                 {isActive && (
                   <path
@@ -354,6 +400,7 @@ export const DiagramSvg: React.FC<DiagramSvgProps> = ({
             <g
               key={pairKey}
               className="cursor-pointer group"
+              style={{ opacity: edgeOpacity, transition: 'opacity 0.4s ease' }}
               onClick={() => onEdgeClick && onEdgeClick(from, to, transList[0].input)}
               onMouseEnter={() => onEdgeHover && onEdgeHover(pairKey)}
               onMouseLeave={() => onEdgeHover && onEdgeHover(null)}
@@ -411,16 +458,20 @@ export const DiagramSvg: React.FC<DiagramSvgProps> = ({
           const isInitial = machine.initialState === state;
           const isNodeActive = activeState === state;
           const isNodeHighlighted = highlightedState === state;
+          const isNodeVisible = !visibleStateSet || visibleStateSet.has(state);
+          const isConflict = conflictStateSet?.has(state) ?? false;
+          const nodeOpacity = isNodeVisible ? 1 : 0.07;
 
           return (
             <g
               key={state}
               transform={`translate(${p.x}, ${p.y})`}
               className="cursor-pointer group"
+              style={{ opacity: nodeOpacity, transition: 'opacity 0.4s ease' }}
               onClick={() => onStateClick && onStateClick(state)}
             >
               {/* Initial State Arrow (JFLAP style incoming pointer) */}
-              {isInitial && (
+              {isInitial && isNodeVisible && (
                 <g transform={`translate(-${nodeRadius + 18}, 0)`}>
                   <line
                     x1="-10"
@@ -441,6 +492,15 @@ export const DiagramSvg: React.FC<DiagramSvgProps> = ({
                 />
               )}
 
+              {/* Conflict highlight ring (amber - state needs splitting) */}
+              {isConflict && isNodeVisible && (
+                <circle
+                  r={nodeRadius + 5}
+                  className="fill-none stroke-amber-400 stroke-[2.5] opacity-80"
+                  strokeDasharray="4 3"
+                />
+              )}
+
               {/* Node Circle */}
               <circle
                 r={nodeRadius}
@@ -457,7 +517,7 @@ export const DiagramSvg: React.FC<DiagramSvgProps> = ({
               />
 
               {/* Node Content */}
-              {isMoore ? (
+              {isMoore && !hideOutputs ? (
                 <g>
                   {/* Divider line */}
                   <line
