@@ -147,3 +147,133 @@ AutomataLab adopts a **developer-tool aesthetic** inspired by the technical eleg
   - **Right Panel**: Step-by-step conversion traces, state-splitting explanations, and invariant checks.
   - **Bottom Panel**: Synchronous input/output simulation tape, timeline stepper, and transition logs.
 
+
+---
+
+## 7. Phase 4 — Interactive Machine Builder Components
+
+### 7.1 `useMachineEditor` Hook
+
+**Path:** `apps/web/src/hooks/useMachineEditor.ts`
+
+The canonical single source of truth for all builder state. All graph and table components derive their display from this hook and write mutations through its action methods.
+
+**Key state:**
+- `machine: MealyMachine | MooreMachine` — the formal automaton definition.
+- `nodePositions: Record<string, { x: number; y: number }>` — visual-only layout positions (not persisted to DB).
+- `validation: ValidationResult` — recalculated on every edit via `validateMachine()` from `@automatalab/automata`.
+- `completeness: number` — 0–100% fraction of defined transitions.
+- `savedId: string | null` — backend machine ID after a successful save.
+- `isDirty: boolean` — true when unsaved changes exist.
+
+**Helper export:** `computeAutoLayout(states: string[]): Record<string, { x, y }>` — places N states evenly on a radius-200 circle centred at (250, 250).
+
+### 7.2 `StateNode`
+
+**Path:** `apps/web/src/components/builder/StateNode.tsx`
+
+Custom `@xyflow/react` node renderer. Variants:
+
+| Condition | Visual |
+|---|---|
+| Mealy state | Single circle with centred state label |
+| Moore state | Split circle — top: state ID, divider, bottom: output symbol |
+| Initial state | Cyan ring + animated left-pointing arrow (JFLAP-style) |
+| Selected state | Indigo/blue ring highlight |
+
+Handles at N, S, E, W cardinal positions for clean edge routing.
+
+**Design tokens used:** `bg-surface-elevated`, `border-border`, `accent-cyan`, `accent-blue`, `foreground`, `foreground-muted`.
+
+### 7.3 `SelfLoopEdge`
+
+**Path:** `apps/web/src/components/builder/SelfLoopEdge.tsx`
+
+Custom `@xyflow/react` edge renderer:
+- **Self-loops** (source === target): Upward circular SVG arc path, label centered above.
+- **Regular transitions**: Standard bezier curve with midpoint label.
+- **Grouped labels**: Multiple transitions between the same pair → comma-separated `symbol/output` list on one edge.
+- **Selected**: Blue stroke (`accent-blue`).
+
+### 7.4 `AutomataGraphCanvas`
+
+**Path:** `apps/web/src/components/builder/AutomataGraphCanvas.tsx`
+
+Wraps `<ReactFlow>` with the custom `StateNode` and `SelfLoopEdge` types:
+- Converts `machine.states` → `Node[]` with stored `nodePositions`.
+- Converts `machine.transitions` → grouped `Edge[]` (labels merged per source/target pair).
+- Features: `fitView` on mount, `Controls`, `MiniMap`, `Background` (dot pattern).
+- Empty state: instruction overlay shown when no states exist.
+- Callback: `onPositionChange(id, x, y)` → `updateNodePosition` on drag.
+
+### 7.5 `TransitionTableEditor`
+
+**Path:** `apps/web/src/components/builder/TransitionTableEditor.tsx`
+
+Editable transition matrix:
+
+| Attribute | Detail |
+|---|---|
+| Rows | Source states (initial state shown with `→` prefix + cyan tint) |
+| Columns | Input symbols |
+| Mealy cell | Two dropdowns: destination state + output symbol |
+| Moore cell | One dropdown: destination state only (state outputs shown in row header) |
+| Missing cell | Amber background highlight (`accent-amber` tint) |
+
+### 7.6 `MachineConfigPanel`
+
+**Path:** `apps/web/src/components/builder/MachineConfigPanel.tsx`
+
+Left-panel configuration:
+- Machine name input + description textarea.
+- Mealy / Moore type toggle (with visual indicator).
+- State list: add, rename (inline edit), delete (guarded), set-initial (★ button).
+- Input alphabet: chip-tag display with add field and ✕ removal.
+- Output alphabet: same pattern.
+- Moore state output assignment: dropdown per state.
+- Duplicate detection with inline error messages.
+
+### 7.7 `ValidationPanel`
+
+**Path:** `apps/web/src/components/builder/ValidationPanel.tsx`
+
+Right-panel analysis:
+
+| Element | Detail |
+|---|---|
+| Status banner | Emerald = Valid, Amber = Draft (incomplete but no errors), Rose = Invalid |
+| Completeness bar | Progress bar 0–100% with fraction text |
+| Invariant checklist | q₀ ∈ Q, Deterministic, No unreachable states |
+| Issues | Filtered from `validation.issues` by `severity === 'error'` or `'warning'` |
+
+> **Important:** `ValidationResult` from `@automatalab/automata` exposes `issues: ValidationIssue[]` with a `severity` discriminant — not `.errors[]` / `.warnings[]`. All filtering uses `issues.filter(i => i.severity === 'error')`.
+
+### 7.8 `PresetSelectorModal`
+
+**Path:** `apps/web/src/components/builder/PresetSelectorModal.tsx`
+
+Six predefined benchmark FSMs (imported from `@automatalab/automata` presets):
+
+| Name | Type | States | Purpose |
+|---|---|---|---|
+| Task 6 Mealy | Mealy | A, B | Mandatory Phase 1 benchmark |
+| Parity Checker | Mealy | even, odd | XOR parity detector |
+| Parity Moore | Moore | even, odd | Moore parity equivalent |
+| 101 Detector | Mealy | s0, s1, s2 | Overlapping pattern detection |
+| 010 Detector | Moore | s0, s1, s2 | Moore pattern detection |
+| 2-bit Counter | Mealy | s00–s11 | Modulo-4 binary counter |
+
+Each card shows: type badge, state count, alphabet symbols, and transition count.
+
+### 7.9 View Mode Layout
+
+`BuilderPage` supports three view modes toggled via toolbar:
+
+| Mode | Layout |
+|---|---|
+| `split` | Graph canvas (top 60%) + Transition table (bottom 40%) |
+| `graph` | Graph canvas full area |
+| `table` | Transition table full area |
+
+The `MachineConfigPanel` occupies the left column and `ValidationPanel` the right column in all modes.
+

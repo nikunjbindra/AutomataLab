@@ -63,13 +63,17 @@ export const TestResultsPage: React.FC = () => {
     {
       workspace: 'apps/web',
       icon: Globe,
-      title: 'Web Application Shell & React Tests',
-      count: '3 / 3 Tests Passing',
+      title: 'Web Application Shell, Component & Builder Tests',
+      count: '14 / 14 Tests Passing',
       status: 'success' as const,
       details: [
         'Component isolation & module export verification',
         'Deterministic TanStack Query key factory generation',
         'API client signature and method exposure verification',
+        'Interactive Machine Builder hook operations (create, rename, delete)',
+        'State cascading transition updates across Q, Σ, and Δ',
+        'Circular auto-layout coordinate generator without node collisions',
+        'Dual-direction template conversion (Mealy ↔ Moore)',
       ],
     },
   ];
