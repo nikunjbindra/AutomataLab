@@ -6,7 +6,7 @@ import {
   Workflow,
   PlayCircle,
   FlaskConical,
-  BookOpen,
+  GraduationCap,
   Layers,
   ChevronLeft,
   ChevronRight,
@@ -57,8 +57,8 @@ const navItems: NavItem[] = [
   },
   {
     to: '/docs',
-    label: 'Theory & Documentation',
-    icon: BookOpen,
+    label: 'Visual Learning Lab',
+    icon: GraduationCap,
   },
 ];
 

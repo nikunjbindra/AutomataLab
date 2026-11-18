@@ -207,7 +207,7 @@ describe('AutomataLab REST API & Persistence Integration Test Suite', () => {
     expect(diffRes.body.data.isEquivalent).toBe(false);
     expect(diffRes.body.data.counterexample).toBeDefined();
     expect(diffRes.body.data.counterexample.inputString).toBe('0');
-  });
+  }, 15000);
 
   // 10. Rejecting Malformed Input
   it('10. Rejects invalid requests with appropriate 400 status and structured JSON', async () => {

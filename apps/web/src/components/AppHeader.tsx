@@ -29,7 +29,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
       case '/tests':
         return 'Test Results & Verification';
       case '/docs':
-        return 'Theory & Documentation';
+        return 'Visual Learning Lab';
       default:
         return 'AutomataLab';
     }
