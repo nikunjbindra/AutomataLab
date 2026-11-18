@@ -1,1 +1,1 @@
-{"root":["./src/index.ts","./src/types.ts","./src/__tests__/automata.test.ts"],"version":"5.9.3"}
+{"root":["./src/equivalence.ts","./src/index.ts","./src/mealy-to-moore.ts","./src/moore-to-mealy.ts","./src/presets.ts","./src/simulation.ts","./src/types.ts","./src/validation.ts","./src/__tests__/automata.test.ts","./src/__tests__/conversion-and-simulation.test.ts","./src/__tests__/mandatory-example.test.ts"],"version":"5.9.3"}

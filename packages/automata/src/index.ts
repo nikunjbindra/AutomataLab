@@ -1,6 +1,12 @@
 export * from './types.js';
+export * from './validation.js';
+export * from './mealy-to-moore.js';
+export * from './moore-to-mealy.js';
+export * from './simulation.js';
+export * from './equivalence.js';
+export * from './presets.js';
 
-export const AUTOMATA_ENGINE_VERSION = '0.1.0';
+export const AUTOMATA_ENGINE_VERSION = '1.0.0';
 
 /**
  * Validates whether all transitions in a machine refer only to declared states and symbols.

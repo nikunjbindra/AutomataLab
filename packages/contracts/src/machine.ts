@@ -3,11 +3,9 @@ import { z } from 'zod';
 export const MachineTypeSchema = z.enum(['mealy', 'moore']);
 export type MachineType = z.infer<typeof MachineTypeSchema>;
 
-export const StateIdSchema = z.string().min(1).regex(/^[a-zA-Z0-9_-]+$/, {
-  message: 'State identifier must contain only alphanumeric characters, underscores, or hyphens',
-});
+export const StateIdSchema = z.string().trim().min(1).max(50);
 
-export const SymbolSchema = z.string().min(1).max(10);
+export const SymbolSchema = z.string().trim().min(1).max(20);
 
 // Mealy Machine Schemas
 export const MealyTransitionSchema = z.object({

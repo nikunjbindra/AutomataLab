@@ -7,7 +7,7 @@ import {
 
 describe('Automata Core Engine Base', () => {
   it('exposes engine version', () => {
-    expect(AUTOMATA_ENGINE_VERSION).toBe('0.1.0');
+    expect(AUTOMATA_ENGINE_VERSION).toBe('1.0.0');
   });
 
   it('validates state consistency accurately', () => {
