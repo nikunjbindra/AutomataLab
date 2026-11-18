@@ -121,9 +121,9 @@ export const PlaybackBar: React.FC<PlaybackBarProps> = ({
           <ChevronRight className="w-4 h-4" />
         </button>
 
-        {/* Step Indicator */}
+        {/* Stage Indicator (1-based for natural walkthrough: Stage 1/9 to Stage 9/9) */}
         <div className="ml-2 font-mono text-xs text-foreground-muted">
-          Step <span className="font-bold text-foreground">{currentStep}</span> / {totalSteps}
+          Stage <span className="font-bold text-foreground">{currentStep + 1}</span> / {totalSteps + 1}
         </div>
       </div>
 

@@ -12,7 +12,7 @@ export const TestResultsPage: React.FC = () => {
       workspace: 'packages/automata',
       icon: Cpu,
       title: 'Pure Algorithmic Core Test Suite',
-      count: '21 / 21 Tests Passing',
+      count: '29 / 29 Tests Passing',
       status: 'success' as const,
       details: [
         'Mandatory Task 6 Reference Benchmark (A_x, A_y, B_x, B_y, S/ε)',
@@ -23,6 +23,7 @@ export const TestResultsPage: React.FC = () => {
         'State splitting & unreachable state BFS elimination',
         'Product-machine complete state exploration (Q_A × Q_B)',
         'Minimal counterexample generation upon mismatch',
+        'Negative & boundary validation (undeclared states, alien symbols, non-determinism)',
       ],
     },
     {
@@ -89,7 +90,7 @@ export const TestResultsPage: React.FC = () => {
           <StatusBadge
             variant="success"
             size="sm"
-            label="62 / 62 Automated Tests Passing"
+            label="70 / 70 Automated Tests Passing"
             icon={<CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />}
           />
         }

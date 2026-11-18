@@ -60,7 +60,7 @@ export const ConversionStepper: React.FC<ConversionStepperProps> = ({
             <StatusBadge
               variant={currentStep >= totalSteps ? 'success' : 'moore'}
               size="sm"
-              label={currentStep >= totalSteps ? 'Complete' : `Step ${currentStep + 1}/${totalSteps + 1}`}
+              label={`Stage ${currentStep + 1}/${totalSteps + 1}`}
             />
           </div>
         </div>
@@ -71,11 +71,10 @@ export const ConversionStepper: React.FC<ConversionStepperProps> = ({
         </p>
 
         {activeStage.invariant && (
-          <div className="p-2.5 rounded-lg bg-surface-elevated/80 border border-border-subtle text-[11px] text-accent-blue flex items-center gap-2">
-            <Sparkles className="w-3.5 h-3.5 shrink-0 text-accent-blue" />
-            <span>
-              <strong>Algorithmic Invariant:</strong> {activeStage.invariant}
-            </span>
+          <div className="pt-1 flex items-center gap-1.5 text-[10px] text-foreground-muted">
+            <Sparkles className="w-3 h-3 text-accent-blue shrink-0" />
+            <span className="font-semibold text-foreground">Mathematical Rule:</span>
+            <code className="text-accent-blue bg-surface-elevated/60 px-1.5 py-0.5 rounded border border-border-subtle font-mono">{activeStage.invariant}</code>
           </div>
         )}
       </div>

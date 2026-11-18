@@ -185,90 +185,97 @@ export const DiagramSvg: React.FC<DiagramSvgProps> = ({
       )}
 
       {/* Placeholder overlay for stages where target is not yet revealed */}
-      {showPlaceholder && (
-        <div className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-2 bg-surface/80 backdrop-blur-[2px]">
-          <div className="w-12 h-12 rounded-full border-2 border-dashed border-border-subtle flex items-center justify-center">
-            <span className="text-foreground-muted text-lg select-none">?</span>
+      {showPlaceholder ? (
+        <div
+          className="w-full flex flex-col items-center justify-center gap-3 p-8 bg-surface/40 select-none"
+          style={{ minHeight: `${height}px` }}
+        >
+          <div className="w-14 h-14 rounded-2xl border-2 border-dashed border-border flex items-center justify-center bg-surface-elevated/60 shadow-xs">
+            <span className="text-foreground-muted text-xl font-bold font-mono">Q&apos;</span>
           </div>
-          <span className="text-[11px] font-mono text-foreground-muted text-center px-4">
-            Advance steps to reveal converted machine
-          </span>
+          <div className="text-center space-y-1">
+            <p className="text-xs font-bold font-mono text-foreground">Target Canvas Awaiting Transformation</p>
+            <p className="text-[11px] font-mono text-foreground-muted max-w-xs">
+              Advance the walkthrough to progressively reveal generated states, redirected transitions, and outputs.
+            </p>
+          </div>
         </div>
-      )}
+      ) : (
+        <svg
+          viewBox={`-12 -12 ${width + 24} ${height + 24}`}
+          className="w-full h-full select-none"
+          style={{ minHeight: `${height}px` }}
+        >
+          <defs>
+            {/* Arrowhead marker default */}
+            <marker
+              id="arrowhead-def"
+              viewBox="0 0 10 10"
+              refX="7"
+              refY="5"
+              markerWidth="6"
+              markerHeight="6"
+              orient="auto"
+            >
+              <path d="M 0 1.5 L 8 5 L 0 8.5 z" className="fill-slate-400 dark:fill-slate-500" />
+            </marker>
 
-      <svg
-        viewBox={`0 0 ${width} ${height}`}
-        className="w-full h-full select-none"
-        style={{ minHeight: `${height}px` }}
-      >
-        <defs>
-          {/* Arrowhead marker default */}
-          <marker
-            id="arrowhead-def"
-            viewBox="0 0 10 10"
-            refX="9"
-            refY="5"
-            markerWidth="6"
-            markerHeight="6"
-            orient="auto"
-          >
-            <path d="M 0 1.5 L 8 5 L 0 8.5 z" className="fill-slate-400 dark:fill-slate-500" />
-          </marker>
+            {/* Arrowhead marker active / highlighted */}
+            <marker
+              id="arrowhead-hi"
+              viewBox="0 0 10 10"
+              refX="7"
+              refY="5"
+              markerWidth="7"
+              markerHeight="7"
+              orient="auto"
+            >
+              <path d="M 0 1.5 L 8 5 L 0 8.5 z" className="fill-accent-blue" />
+            </marker>
 
-          {/* Arrowhead marker active / highlighted */}
-          <marker
-            id="arrowhead-hi"
-            viewBox="0 0 10 10"
-            refX="9"
-            refY="5"
-            markerWidth="7"
-            markerHeight="7"
-            orient="auto"
-          >
-            <path d="M 0 1.5 L 8 5 L 0 8.5 z" className="fill-accent-blue" />
-          </marker>
+            {/* Glowing pulse filter */}
+            <filter id="svg-glow" x="-30%" y="-30%" width="160%" height="160%">
+              <feGaussianBlur stdDeviation="4" result="blur" />
+              <feComposite in="SourceGraphic" in2="blur" operator="over" />
+            </filter>
+          </defs>
 
-          {/* Glowing pulse filter */}
-          <filter id="svg-glow" x="-30%" y="-30%" width="160%" height="160%">
-            <feGaussianBlur stdDeviation="4" result="blur" />
-            <feComposite in="SourceGraphic" in2="blur" operator="over" />
-          </filter>
-        </defs>
+          {/* 1. EDGES */}
+          {Array.from(groupedTransitions.entries()).map(([pairKey, transList]) => {
+            const [from, to] = pairKey.split('->');
+            const p1 = positions[from];
+            const p2 = positions[to];
+            if (!p1 || !p2) return null;
 
-        {/* 1. EDGES */}
-        {Array.from(groupedTransitions.entries()).map(([pairKey, transList]) => {
-          const [from, to] = pairKey.split('->');
-          const p1 = positions[from];
-          const p2 = positions[to];
-          if (!p1 || !p2) return null;
+            // Progressive reveal: strictly hide non-visible edges (do not render ghosted)
+            const isEdgeVisible =
+              (!visibleEdgeSet || visibleEdgeSet.has(pairKey)) &&
+              (!visibleStateSet || (visibleStateSet.has(from) && visibleStateSet.has(to)));
+            if (!isEdgeVisible) return null;
 
-          const isSelfLoop = from === to;
-          const reverseKey = `${to}->${from}`;
-          const isBiDirectional = !isSelfLoop && groupedTransitions.has(reverseKey);
+            const isSelfLoop = from === to;
+            const reverseKey = `${to}->${from}`;
+            const isBiDirectional = !isSelfLoop && groupedTransitions.has(reverseKey);
 
-          // Progressive reveal: ghost non-visible edges
-          const isEdgeVisible = !visibleEdgeSet || visibleEdgeSet.has(pairKey);
-          const edgeOpacity = isEdgeVisible ? 1 : 0.07;
+            // Check if active
+            const isActive =
+              activeTransition &&
+              activeTransition.from === from &&
+              activeTransition.to === to &&
+              (!activeTransition.input || transList.some((t) => t.input === activeTransition.input));
 
-          // Check if active
-          const isActive =
-            activeTransition &&
-            activeTransition.from === from &&
-            activeTransition.to === to &&
-            (!activeTransition.input || transList.some((t) => t.input === activeTransition.input));
+            const isEdgeHighlighted =
+              highlightedEdge &&
+              (highlightedEdge === `${from}->${to}` ||
+                transList.some((t) => highlightedEdge === `${from}->${to}:${t.input}`));
 
-          const isEdgeHighlighted =
-            highlightedEdge &&
-            (highlightedEdge === `${from}->${to}` ||
-              transList.some((t) => highlightedEdge === `${from}->${to}:${t.input}`));
+            const strokeClass = isActive
+              ? 'stroke-accent-blue stroke-[3]'
+              : isEdgeHighlighted
+              ? 'stroke-accent-cyan stroke-[2.5]'
+              : 'stroke-slate-300 dark:stroke-slate-700 stroke-[1.5] group-hover:stroke-accent-blue/80';
 
-          const strokeClass = isActive
-            ? 'stroke-accent-blue stroke-[3]'
-            : isEdgeHighlighted
-            ? 'stroke-accent-cyan stroke-[2.5]'
-            : 'stroke-slate-300 dark:stroke-slate-700 stroke-[1.5] group-hover:stroke-accent-blue/80';
-
-          const marker = isActive || isEdgeHighlighted ? 'url(#arrowhead-hi)' : 'url(#arrowhead-def)';
+            const marker = isActive || isEdgeHighlighted ? 'url(#arrowhead-hi)' : 'url(#arrowhead-def)';
 
           // Self Loop with smart outward placement
           if (isSelfLoop) {
@@ -322,7 +329,6 @@ export const DiagramSvg: React.FC<DiagramSvgProps> = ({
               <g
                 key={pairKey}
                 className="cursor-pointer group"
-                style={{ opacity: edgeOpacity, transition: 'opacity 0.4s ease' }}
                 onClick={() => onEdgeClick && onEdgeClick(from, to, transList[0].input)}
                 onMouseEnter={() => onEdgeHover && onEdgeHover(pairKey)}
                 onMouseLeave={() => onEdgeHover && onEdgeHover(null)}
@@ -331,7 +337,7 @@ export const DiagramSvg: React.FC<DiagramSvgProps> = ({
                   d={d}
                   fill="none"
                   className={`${strokeClass} transition-all duration-300`}
-                  markerEnd={isEdgeVisible ? marker : 'url(#arrowhead-def)'}
+                  markerEnd={marker}
                 />
                 {isActive && (
                   <path
@@ -400,7 +406,6 @@ export const DiagramSvg: React.FC<DiagramSvgProps> = ({
             <g
               key={pairKey}
               className="cursor-pointer group"
-              style={{ opacity: edgeOpacity, transition: 'opacity 0.4s ease' }}
               onClick={() => onEdgeClick && onEdgeClick(from, to, transList[0].input)}
               onMouseEnter={() => onEdgeHover && onEdgeHover(pairKey)}
               onMouseLeave={() => onEdgeHover && onEdgeHover(null)}
@@ -458,16 +463,17 @@ export const DiagramSvg: React.FC<DiagramSvgProps> = ({
           const isInitial = machine.initialState === state;
           const isNodeActive = activeState === state;
           const isNodeHighlighted = highlightedState === state;
+          // Progressive reveal: strictly hide non-visible nodes (do not render ghosted)
           const isNodeVisible = !visibleStateSet || visibleStateSet.has(state);
+          if (!isNodeVisible) return null;
+
           const isConflict = conflictStateSet?.has(state) ?? false;
-          const nodeOpacity = isNodeVisible ? 1 : 0.07;
 
           return (
             <g
               key={state}
               transform={`translate(${p.x}, ${p.y})`}
               className="cursor-pointer group"
-              style={{ opacity: nodeOpacity, transition: 'opacity 0.4s ease' }}
               onClick={() => onStateClick && onStateClick(state)}
             >
               {/* Initial State Arrow (JFLAP style incoming pointer) */}
@@ -564,6 +570,7 @@ export const DiagramSvg: React.FC<DiagramSvgProps> = ({
           );
         })}
       </svg>
+      )}
     </div>
   );
 };
