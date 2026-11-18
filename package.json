@@ -1,0 +1,24 @@
+{
+  "name": "automatalab-monorepo",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Interactive platform for Mealy and Moore machine conversion, equivalence verification, and simulation.",
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "dev": "npm run dev --workspace=@automatalab/api & npm run dev --workspace=@automatalab/web",
+    "dev:web": "npm run dev --workspace=@automatalab/web",
+    "dev:api": "npm run dev --workspace=@automatalab/api",
+    "build": "npm run build --workspace=@automatalab/contracts && npm run build --workspace=@automatalab/automata && npm run build --workspace=@automatalab/api && npm run build --workspace=@automatalab/web",
+    "test": "npm run test --workspaces --if-present",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "db:generate": "npm run db:generate --workspace=@automatalab/api",
+    "db:migrate": "npm run db:migrate --workspace=@automatalab/api",
+    "db:studio": "npm run db:studio --workspace=@automatalab/api"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.3"
+  }
+}
