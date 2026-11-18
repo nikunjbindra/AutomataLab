@@ -130,7 +130,7 @@ export const PlaybackBar: React.FC<PlaybackBarProps> = ({
       {/* Middle: Caption or progress bar */}
       <div className="flex-1 w-full max-w-xl px-2 flex flex-col items-center">
         {caption && (
-          <div className="text-xs font-mono text-foreground text-center truncate mb-1.5 max-w-full">
+          <div className="text-xs font-mono text-foreground text-center leading-relaxed break-words px-2.5 py-1 mb-1.5 w-full bg-surface/50 rounded-md border border-border-subtle">
             {caption}
           </div>
         )}

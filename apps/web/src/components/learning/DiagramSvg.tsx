@@ -11,7 +11,7 @@ export interface DiagramSvgProps {
   nodePositions?: Record<string, SvgNodePos>;
   activeState?: string | null;
   activeTransition?: { from: string; to: string; input?: string } | null;
-  highlightedEdge?: string | null; // e.g. "A->B:0"
+  highlightedEdge?: string | null; // e.g. "A->B:0" or "A->B"
   highlightedState?: string | null;
   onStateClick?: (state: string) => void;
   onEdgeClick?: (from: string, to: string, input: string) => void;
@@ -32,8 +32,8 @@ export const DiagramSvg: React.FC<DiagramSvgProps> = ({
   onStateClick,
   onEdgeClick,
   onEdgeHover,
-  width = 540,
-  height = 320,
+  width = 560,
+  height = 340,
   className = '',
   badge,
 }) => {
@@ -41,7 +41,9 @@ export const DiagramSvg: React.FC<DiagramSvgProps> = ({
   const moore = machine as MooreMachine;
   const mealy = machine as MealyMachine;
 
-  // Default coordinate calculation if positions are not passed
+  const nodeRadius = 26;
+
+  // Intelligent collision-free layout
   const positions: Record<string, SvgNodePos> = React.useMemo(() => {
     if (nodePositions && Object.keys(nodePositions).length > 0) {
       return nodePositions;
@@ -50,28 +52,69 @@ export const DiagramSvg: React.FC<DiagramSvgProps> = ({
     const n = states.length;
     const posMap: Record<string, SvgNodePos> = {};
 
-    if (n === 1) {
-      posMap[states[0]] = { x: width / 2, y: height / 2 };
-    } else if (n === 2) {
-      posMap[states[0]] = { x: width * 0.3, y: height / 2 };
-      posMap[states[1]] = { x: width * 0.7, y: height / 2 };
-    } else if (n === 3) {
-      posMap[states[0]] = { x: width * 0.25, y: height * 0.65 };
-      posMap[states[1]] = { x: width * 0.5, y: height * 0.3 };
-      posMap[states[2]] = { x: width * 0.75, y: height * 0.65 };
-    } else {
-      // Circular layout
-      const radius = Math.min(width, height) * 0.35;
-      const centerX = width / 2;
-      const centerY = height / 2;
-      states.forEach((s, idx) => {
-        const angle = (idx / n) * 2 * Math.PI - Math.PI / 2;
-        posMap[s] = {
-          x: Math.round(centerX + radius * Math.cos(angle)),
-          y: Math.round(centerY + radius * Math.sin(angle)),
-        };
+    // Special case 1: 5-state converted Moore benchmark (S, A_x, A_y, B_x, B_y)
+    const hasS = states.includes('S');
+    const hasAx = states.some((s) => s.startsWith('A_') || s === 'A');
+    const hasBx = states.some((s) => s.startsWith('B_') || s === 'B');
+
+    if (n === 5 && hasS && hasAx && hasBx) {
+      // Organized layered flow: S on far left, A states in column 1, B states in column 2
+      const aStates = states.filter((s) => s.startsWith('A') && s !== 'S');
+      const bStates = states.filter((s) => s.startsWith('B'));
+
+      posMap['S'] = { x: 75, y: height / 2 };
+
+      if (aStates.length === 2) {
+        posMap[aStates[0]] = { x: 260, y: height * 0.28 };
+        posMap[aStates[1]] = { x: 260, y: height * 0.72 };
+      }
+      if (bStates.length === 2) {
+        posMap[bStates[0]] = { x: 460, y: height * 0.28 };
+        posMap[bStates[1]] = { x: 460, y: height * 0.72 };
+      }
+      // Fill any remaining
+      states.forEach((s) => {
+        if (!posMap[s]) posMap[s] = { x: width / 2, y: height / 2 };
       });
+      return posMap;
     }
+
+    // Special case 2: 2 states (e.g. A, B or even, odd)
+    if (n === 2) {
+      posMap[states[0]] = { x: width * 0.28, y: height / 2 };
+      posMap[states[1]] = { x: width * 0.72, y: height / 2 };
+      return posMap;
+    }
+
+    // Special case 3: 3 states (e.g. s0, s1, s2)
+    if (n === 3) {
+      posMap[states[0]] = { x: width * 0.22, y: height * 0.65 };
+      posMap[states[1]] = { x: width * 0.5, y: height * 0.3 };
+      posMap[states[2]] = { x: width * 0.78, y: height * 0.65 };
+      return posMap;
+    }
+
+    // Special case 4: 4 states (e.g. 2-bit counter s00, s01, s10, s11)
+    if (n === 4) {
+      posMap[states[0]] = { x: width * 0.26, y: height * 0.3 };
+      posMap[states[1]] = { x: width * 0.74, y: height * 0.3 };
+      posMap[states[2]] = { x: width * 0.74, y: height * 0.72 };
+      posMap[states[3]] = { x: width * 0.26, y: height * 0.72 };
+      return posMap;
+    }
+
+    // General case: Spacious circular layout
+    const radius = Math.min(width, height) * 0.38;
+    const centerX = width / 2;
+    const centerY = height / 2;
+    states.forEach((s, idx) => {
+      const angle = (idx / n) * 2 * Math.PI - Math.PI / 2;
+      posMap[s] = {
+        x: Math.round(centerX + radius * Math.cos(angle)),
+        y: Math.round(centerY + radius * Math.sin(angle)),
+      };
+    });
+
     return posMap;
   }, [machine.states, nodePositions, width, height]);
 
@@ -101,12 +144,13 @@ export const DiagramSvg: React.FC<DiagramSvgProps> = ({
     return map;
   }, [isMoore, mealy.transitions, moore.transitions]);
 
-  const nodeRadius = 26;
+  const centerX = width / 2;
+  const centerY = height / 2;
 
   return (
-    <div className={`relative rounded-xl border border-border bg-surface/50 overflow-hidden shadow-inner ${className}`}>
+    <div className={`relative rounded-xl border border-border bg-surface/60 overflow-hidden select-none ${className}`}>
       {badge && (
-        <div className="absolute top-2.5 left-3 z-10 text-[10px] font-mono uppercase tracking-wider font-bold px-2 py-0.5 rounded bg-surface-elevated/90 border border-border text-foreground-muted backdrop-blur-sm">
+        <div className="absolute top-2.5 left-3 z-10 text-[10px] font-mono uppercase tracking-wider font-bold px-2 py-0.5 rounded bg-surface-elevated/90 border border-border text-foreground-muted backdrop-blur-sm shadow-xs">
           {badge}
         </div>
       )}
@@ -119,7 +163,7 @@ export const DiagramSvg: React.FC<DiagramSvgProps> = ({
         <defs>
           {/* Arrowhead marker default */}
           <marker
-            id="arrowhead"
+            id="arrowhead-def"
             viewBox="0 0 10 10"
             refX="9"
             refY="5"
@@ -132,7 +176,7 @@ export const DiagramSvg: React.FC<DiagramSvgProps> = ({
 
           {/* Arrowhead marker active / highlighted */}
           <marker
-            id="arrowhead-active"
+            id="arrowhead-hi"
             viewBox="0 0 10 10"
             refX="9"
             refY="5"
@@ -144,7 +188,7 @@ export const DiagramSvg: React.FC<DiagramSvgProps> = ({
           </marker>
 
           {/* Glowing pulse filter */}
-          <filter id="glow" x="-30%" y="-30%" width="160%" height="160%">
+          <filter id="svg-glow" x="-30%" y="-30%" width="160%" height="160%">
             <feGaussianBlur stdDeviation="4" result="blur" />
             <feComposite in="SourceGraphic" in2="blur" operator="over" />
           </filter>
@@ -170,23 +214,60 @@ export const DiagramSvg: React.FC<DiagramSvgProps> = ({
 
           const isEdgeHighlighted =
             highlightedEdge &&
-            transList.some((t) => highlightedEdge === `${from}->${to}:${t.input}` || highlightedEdge === `${from}->${to}`);
+            (highlightedEdge === `${from}->${to}` ||
+              transList.some((t) => highlightedEdge === `${from}->${to}:${t.input}`));
 
           const strokeClass = isActive
             ? 'stroke-accent-blue stroke-[3]'
             : isEdgeHighlighted
             ? 'stroke-accent-cyan stroke-[2.5]'
-            : 'stroke-slate-300 dark:stroke-slate-700 stroke-[1.5] hover:stroke-accent-blue/80';
+            : 'stroke-slate-300 dark:stroke-slate-700 stroke-[1.5] group-hover:stroke-accent-blue/80';
 
-          const marker = isActive || isEdgeHighlighted ? 'url(#arrowhead-active)' : 'url(#arrowhead)';
+          const marker = isActive || isEdgeHighlighted ? 'url(#arrowhead-hi)' : 'url(#arrowhead-def)';
 
-          // Path computation
+          // Self Loop with smart outward placement
           if (isSelfLoop) {
-            // Upward loop
             const loopRadius = 22;
-            const loopX = p1.x;
-            const loopY = p1.y - nodeRadius;
-            const d = `M ${loopX - 10} ${loopY} A ${loopRadius} ${loopRadius} 0 1 1 ${loopX + 10} ${loopY}`;
+            // Determine direction pointing outward from center of diagram
+            const dxC = p1.x - centerX;
+            const dyC = p1.y - centerY;
+
+            let d = '';
+            let labelX = p1.x;
+            let labelY = p1.y - nodeRadius - 16;
+
+            if (Math.abs(dxC) > Math.abs(dyC) + 40) {
+              // Left or Right loop
+              if (dxC < 0) {
+                // Loop Left
+                const lx = p1.x - nodeRadius;
+                const ly = p1.y;
+                d = `M ${lx} ${ly - 10} A ${loopRadius} ${loopRadius} 0 1 0 ${lx} ${ly + 10}`;
+                labelX = p1.x - nodeRadius - loopRadius - 6;
+                labelY = p1.y;
+              } else {
+                // Loop Right
+                const lx = p1.x + nodeRadius;
+                const ly = p1.y;
+                d = `M ${lx} ${ly - 10} A ${loopRadius} ${loopRadius} 0 1 1 ${lx} ${ly + 10}`;
+                labelX = p1.x + nodeRadius + loopRadius + 6;
+                labelY = p1.y;
+              }
+            } else if (dyC > 0) {
+              // Loop Downward
+              const lx = p1.x;
+              const ly = p1.y + nodeRadius;
+              d = `M ${lx - 10} ${ly} A ${loopRadius} ${loopRadius} 0 1 0 ${lx + 10} ${ly}`;
+              labelX = p1.x;
+              labelY = p1.y + nodeRadius + loopRadius + 14;
+            } else {
+              // Loop Upward (default)
+              const lx = p1.x;
+              const ly = p1.y - nodeRadius;
+              d = `M ${lx - 10} ${ly} A ${loopRadius} ${loopRadius} 0 1 1 ${lx + 10} ${ly}`;
+              labelX = p1.x;
+              labelY = p1.y - nodeRadius - loopRadius - 6;
+            }
 
             const labelText = transList
               .map((t) => (t.output !== undefined ? `${t.input}/${t.output}` : t.input))
@@ -213,25 +294,27 @@ export const DiagramSvg: React.FC<DiagramSvgProps> = ({
                     className="stroke-accent-blue/40 stroke-[6] animate-pulse"
                   />
                 )}
-                {/* Edge Label */}
-                <rect
-                  x={loopX - 22}
-                  y={loopY - loopRadius * 2 - 8}
-                  width="44"
-                  height="16"
-                  rx="4"
-                  className="fill-surface-elevated/90 stroke-border/70 stroke-[0.5]"
-                />
-                <text
-                  x={loopX}
-                  y={loopY - loopRadius * 2 + 3}
-                  textAnchor="middle"
-                  className={`font-mono text-[10px] font-bold ${
-                    isActive ? 'fill-accent-blue' : 'fill-foreground-muted'
-                  }`}
-                >
-                  {labelText}
-                </text>
+                {/* Edge Label badge */}
+                <g transform={`translate(${labelX}, ${labelY})`}>
+                  <rect
+                    x="-20"
+                    y="-9"
+                    width="40"
+                    height="18"
+                    rx="4"
+                    className="fill-surface-elevated/95 stroke-border/70 stroke-[0.5]"
+                  />
+                  <text
+                    x="0"
+                    y="3"
+                    textAnchor="middle"
+                    className={`font-mono text-[10px] font-bold ${
+                      isActive ? 'fill-accent-blue' : 'fill-foreground-muted'
+                    }`}
+                  >
+                    {labelText}
+                  </text>
+                </g>
               </g>
             );
           }
@@ -242,25 +325,24 @@ export const DiagramSvg: React.FC<DiagramSvgProps> = ({
           const dist = Math.sqrt(dx * dx + dy * dy);
           if (dist === 0) return null;
 
-          // Unit vectors
           const ux = dx / dist;
           const uy = dy / dist;
+          // Perpendicular unit vector (points to the right of travel direction)
           const px = -uy;
           const py = ux;
 
-          // Curvature if bidirectional
-          const curvature = isBiDirectional ? 28 : 0;
-          const midX = (p1.x + p2.x) / 2 + px * curvature;
-          const midY = (p1.y + p2.y) / 2 + py * curvature;
+          // Curvature: bidirectional transitions arc outwards to avoid overlap
+          const baseCurvature = isBiDirectional ? 26 : 0;
+          const midX = (p1.x + p2.x) / 2 + px * baseCurvature;
+          const midY = (p1.y + p2.y) / 2 + py * baseCurvature;
 
-          // Start and end points on node circumference
-          const sx = p1.x + ux * nodeRadius + (isBiDirectional ? px * 4 : 0);
-          const sy = p1.y + uy * nodeRadius + (isBiDirectional ? py * 4 : 0);
-          const ex = p2.x - ux * (nodeRadius + 4) + (isBiDirectional ? px * 4 : 0);
-          const ey = p2.y - uy * (nodeRadius + 4) + (isBiDirectional ? py * 4 : 0);
+          const sx = p1.x + ux * nodeRadius + (isBiDirectional ? px * 3 : 0);
+          const sy = p1.y + uy * nodeRadius + (isBiDirectional ? py * 3 : 0);
+          const ex = p2.x - ux * (nodeRadius + 4) + (isBiDirectional ? px * 3 : 0);
+          const ey = p2.y - uy * (nodeRadius + 4) + (isBiDirectional ? py * 3 : 0);
 
           const d =
-            curvature === 0
+            baseCurvature === 0
               ? `M ${sx} ${sy} L ${ex} ${ey}`
               : `M ${sx} ${sy} Q ${midX} ${midY} ${ex} ${ey}`;
 
@@ -337,7 +419,7 @@ export const DiagramSvg: React.FC<DiagramSvgProps> = ({
               className="cursor-pointer group"
               onClick={() => onStateClick && onStateClick(state)}
             >
-              {/* Initial State Arrow (JFLAP style) */}
+              {/* Initial State Arrow (JFLAP style incoming pointer) */}
               {isInitial && (
                 <g transform={`translate(-${nodeRadius + 18}, 0)`}>
                   <line
@@ -347,14 +429,11 @@ export const DiagramSvg: React.FC<DiagramSvgProps> = ({
                     y2="0"
                     className="stroke-accent-cyan stroke-[2]"
                   />
-                  <polygon
-                    points="10,0 4,-4 4,4"
-                    className="fill-accent-cyan"
-                  />
+                  <polygon points="10,0 4,-4 4,4" className="fill-accent-cyan" />
                 </g>
               )}
 
-              {/* Glowing active outer pulse */}
+              {/* Active outer ping ring */}
               {isNodeActive && (
                 <circle
                   r={nodeRadius + 8}
@@ -374,10 +453,10 @@ export const DiagramSvg: React.FC<DiagramSvgProps> = ({
                     ? 'fill-surface-elevated stroke-accent-cyan stroke-[2]'
                     : 'fill-surface-elevated stroke-border stroke-[1.5] group-hover:stroke-accent-blue'
                 }`}
-                filter={isNodeActive ? 'url(#glow)' : undefined}
+                filter={isNodeActive ? 'url(#svg-glow)' : undefined}
               />
 
-              {/* Content: Moore split circle vs Mealy single label */}
+              {/* Node Content */}
               {isMoore ? (
                 <g>
                   {/* Divider line */}
@@ -402,7 +481,11 @@ export const DiagramSvg: React.FC<DiagramSvgProps> = ({
                     x="0"
                     y="14"
                     textAnchor="middle"
-                    className="font-mono text-[11px] font-semibold fill-accent-indigo"
+                    className={`font-mono text-[11px] font-semibold ${
+                      moore.stateOutputs?.[state] === 'ε'
+                        ? 'fill-accent-amber font-bold'
+                        : 'fill-accent-indigo'
+                    }`}
                   >
                     {moore.stateOutputs?.[state] ?? 'ε'}
                   </text>

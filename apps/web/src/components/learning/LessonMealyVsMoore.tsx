@@ -232,16 +232,117 @@ export const LessonMealyVsMoore: React.FC = () => {
         caption={caption}
       />
 
-      {/* Concept Insight Box */}
-      <div className="p-3.5 rounded-xl border border-accent-blue/20 bg-accent-blue/5 dark:bg-accent-blue/10 text-xs font-mono space-y-1.5 text-foreground">
-        <div className="flex items-center gap-1.5 font-bold text-accent-blue">
-          <Info className="w-4 h-4" />
-          <span>Core Mathematical Distinction:</span>
+      {/* Compact Visual Concept Comparison */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs font-mono">
+        {/* Mealy Visual Flow */}
+        <div className="p-4 rounded-xl border border-blue-500/30 bg-blue-500/5 dark:bg-blue-500/10 space-y-2">
+          <div className="flex items-center justify-between">
+            <span className="font-bold text-accent-blue uppercase tracking-wider text-[11px]">
+              Mealy Flow (Output on Edge)
+            </span>
+            <span className="text-[10px] text-foreground-muted">Length = |w|</span>
+          </div>
+
+          <div className="flex items-center justify-center gap-2 py-2 px-3 rounded-lg bg-surface border border-border text-foreground font-bold text-xs">
+            <span className="px-2 py-1 rounded bg-surface-elevated border border-border">Input (a)</span>
+            <span className="text-accent-blue font-mono font-bold">→</span>
+            <span className="px-2 py-1 rounded bg-blue-500/20 text-accent-blue border border-blue-500/40">
+              Transition δ(q, a)
+            </span>
+            <span className="text-accent-blue font-mono font-bold">→</span>
+            <span className="px-2 py-1 rounded bg-emerald-500/20 text-accent-emerald border border-emerald-500/40">
+              Output λ(q, a)
+            </span>
+          </div>
+          <p className="text-[11px] text-foreground-muted leading-relaxed">
+            Outputs are generated synchronously during transition traversal. For input of length N, exactly N outputs are emitted.
+          </p>
         </div>
-        <div className="text-foreground-muted leading-relaxed pl-5">
-          • <strong>Mealy:</strong> Output is produced simultaneously with transition traversal: <code className="text-foreground font-bold">λ(q, a)</code>. Total outputs = |w|.<br />
-          • <strong>Moore:</strong> Output depends solely on the active state: <code className="text-foreground font-bold">λ_M(s)</code>. It emits <code className="text-accent-amber font-bold">ε</code> at t=0 before any input is consumed. Total outputs = |w| + 1.
+
+        {/* Moore Visual Flow */}
+        <div className="p-4 rounded-xl border border-indigo-500/30 bg-indigo-500/5 dark:bg-indigo-500/10 space-y-2">
+          <div className="flex items-center justify-between">
+            <span className="font-bold text-accent-indigo uppercase tracking-wider text-[11px]">
+              Moore Flow (Output in State)
+            </span>
+            <span className="text-[10px] text-foreground-muted">Length = |w| + 1</span>
+          </div>
+
+          <div className="flex items-center justify-center gap-2 py-2 px-3 rounded-lg bg-surface border border-border text-foreground font-bold text-xs">
+            <span className="px-2 py-1 rounded bg-surface-elevated border border-border">Input (a)</span>
+            <span className="text-accent-indigo font-mono font-bold">→</span>
+            <span className="px-2 py-1 rounded bg-indigo-500/20 text-accent-indigo border border-indigo-500/40">
+              Target State s'
+            </span>
+            <span className="text-accent-indigo font-mono font-bold">→</span>
+            <span className="px-2 py-1 rounded bg-emerald-500/20 text-accent-emerald border border-emerald-500/40">
+              Output λ_M(s')
+            </span>
+          </div>
+          <p className="text-[11px] text-foreground-muted leading-relaxed">
+            Outputs depend exclusively on entering the destination state. Emits synthetic initial marker <strong className="text-accent-amber">ε</strong> at t=0 before consuming input.
+          </p>
         </div>
+      </div>
+
+      {/* Visual Output Sequence Alignment Box */}
+      <div className="p-3.5 rounded-xl border border-border bg-surface-elevated/40 text-xs font-mono space-y-2">
+        <div className="flex items-center justify-between">
+          <span className="font-bold text-foreground text-[11px] uppercase tracking-wider flex items-center gap-1.5">
+            <Info className="w-3.5 h-3.5 text-accent-blue" />
+            <span>Output-Sequence Alignment Convention</span>
+          </span>
+          <span className="text-[10px] text-accent-emerald font-semibold">
+            Equivalence: Moore(w)[1:] ≡ Mealy(w)
+          </span>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-[11px]">
+          <div className="p-2.5 rounded-lg bg-surface border border-border-subtle space-y-1">
+            <div className="text-foreground-muted">Tape Alignment Visualizer:</div>
+            <div className="flex items-center gap-2">
+              <span className="text-foreground-muted w-14">Mealy:</span>
+              <span className="font-bold text-accent-blue tracking-widest bg-blue-500/10 px-2 py-0.5 rounded border border-blue-500/20">
+                {mealySim.outputSequence.join(' ') || '—'}
+              </span>
+              <span className="text-foreground-muted text-[10px]">({mealySim.outputSequence.length} symbols)</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-foreground-muted w-14">Moore:</span>
+              <span className="font-bold text-accent-indigo tracking-widest bg-indigo-500/10 px-2 py-0.5 rounded border border-indigo-500/20">
+                <span className="text-accent-amber mr-1">ε</span>
+                {mooreSim.outputSequence.slice(1).join(' ') || '—'}
+              </span>
+              <span className="text-foreground-muted text-[10px]">({mooreSim.outputSequence.length} symbols)</span>
+            </div>
+          </div>
+
+          <div className="p-2.5 rounded-lg bg-surface border border-border-subtle flex flex-col justify-center text-foreground-muted text-[11px] leading-relaxed">
+            <strong className="text-foreground">About the initial state marker ε:</strong>
+            The synthetic state <code className="text-accent-cyan font-bold">S</code> emits <code className="text-accent-amber font-bold">ε</code> at t=0 to mark the quiescent state before input processing. It is not an ordinary consumed symbol; once stripped, both output streams are identical.
+          </div>
+        </div>
+
+        {/* Collapsible Formal Definitions */}
+        <details className="pt-2 border-t border-border-subtle group">
+          <summary className="text-[11px] font-semibold text-accent-blue cursor-pointer select-none hover:underline flex items-center justify-between">
+            <span>View formal 6-tuple mathematical definitions</span>
+            <span className="text-foreground-muted text-[10px] group-open:hidden">+ expand</span>
+            <span className="text-foreground-muted text-[10px] hidden group-open:inline">− collapse</span>
+          </summary>
+          <div className="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-2 text-[10px] text-foreground-muted p-2.5 rounded bg-surface border border-border-subtle">
+            <div>
+              <strong className="text-foreground block mb-0.5">Mealy Machine M = (Q, Σ, Δ, δ, λ, q₀)</strong>
+              • δ: Q × Σ → Q (State transition)<br />
+              • λ: Q × Σ → Δ (Transition output function)
+            </div>
+            <div>
+              <strong className="text-foreground block mb-0.5">Moore Machine M = (S, Σ, Δ, δ, λ_M, s₀)</strong>
+              • δ: S × Σ → S (State transition)<br />
+              • λ_M: S → Δ (State output function)
+            </div>
+          </div>
+        </details>
       </div>
     </div>
   );

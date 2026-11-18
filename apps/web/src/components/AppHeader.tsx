@@ -19,11 +19,11 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
   const getBreadcrumbTitle = (path: string): string => {
     switch (path) {
       case '/':
-        return 'Dashboard';
+        return 'My Machines & Examples';
       case '/builder':
         return 'Machine Builder';
       case '/convert':
-        return 'Conversion Workspace';
+        return 'Simulator & Converter';
       case '/simulate':
         return 'Simulation Laboratory';
       case '/tests':

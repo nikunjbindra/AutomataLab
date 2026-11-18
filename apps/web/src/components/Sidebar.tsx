@@ -4,7 +4,6 @@ import {
   LayoutDashboard,
   Cpu,
   Workflow,
-  PlayCircle,
   FlaskConical,
   GraduationCap,
   Layers,
@@ -30,10 +29,9 @@ interface NavItem {
 
 const navItems: NavItem[] = [
   {
-    to: '/',
-    label: 'Dashboard',
-    icon: LayoutDashboard,
-    exact: true,
+    to: '/convert',
+    label: 'Simulator & Converter',
+    icon: Workflow,
   },
   {
     to: '/builder',
@@ -41,24 +39,20 @@ const navItems: NavItem[] = [
     icon: Cpu,
   },
   {
-    to: '/convert',
-    label: 'Conversion Workspace',
-    icon: Workflow,
-  },
-  {
-    to: '/simulate',
-    label: 'Simulation Laboratory',
-    icon: PlayCircle,
-  },
-  {
-    to: '/tests',
-    label: 'Test Results',
-    icon: FlaskConical,
+    to: '/',
+    label: 'My Machines & Examples',
+    icon: LayoutDashboard,
+    exact: true,
   },
   {
     to: '/docs',
     label: 'Visual Learning Lab',
     icon: GraduationCap,
+  },
+  {
+    to: '/tests',
+    label: 'Verification & Tests',
+    icon: FlaskConical,
   },
 ];
 
