@@ -3,9 +3,11 @@ import { machineService } from '../services/machine.service.js';
 import type { AnyMachine } from '@automatalab/contracts';
 
 export class MachineController {
-  async list(_req: Request, res: Response, next: NextFunction): Promise<void> {
+  async list(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const machines = await machineService.listMachines();
+      const type = req.query.type as 'mealy' | 'moore' | undefined;
+      const filter = type ? { type } : undefined;
+      const machines = await machineService.listMachines(filter);
       res.json({ data: machines });
     } catch (err) {
       next(err);
@@ -33,6 +35,23 @@ export class MachineController {
       const machineData = req.body as AnyMachine;
       const created = await machineService.saveMachine(machineData);
       res.status(201).json({ data: created });
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  async update(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const machineData = req.body as AnyMachine;
+      const updated = await machineService.updateMachine(req.params.id, machineData);
+      if (!updated) {
+        res.status(404).json({
+          error: `Machine with id '${req.params.id}' not found`,
+          code: 'NOT_FOUND',
+        });
+        return;
+      }
+      res.json({ data: updated });
     } catch (err) {
       next(err);
     }

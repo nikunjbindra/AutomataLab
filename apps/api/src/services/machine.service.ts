@@ -6,8 +6,8 @@ import type { MachineRecord } from '../db/schema.js';
 export class MachineService {
   constructor(private readonly repo: MachineRepository = machineRepository) {}
 
-  async listMachines(): Promise<SavedMachineEntity[]> {
-    const records = await this.repo.findAll();
+  async listMachines(filter?: { type?: 'mealy' | 'moore' }): Promise<SavedMachineEntity[]> {
+    const records = await this.repo.findAll(filter);
     return records.map(this.mapRecordToEntity);
   }
 
@@ -18,19 +18,17 @@ export class MachineService {
   }
 
   async saveMachine(machine: AnyMachine, description?: string): Promise<SavedMachineEntity> {
-    const id = machine.id || randomUUID();
-    const now = new Date();
+    const record = await this.repo.createWithRelations(machine, description);
+    return this.mapRecordToEntity(record);
+  }
 
-    const record = await this.repo.create({
-      id,
-      name: machine.name,
-      description: description ?? machine.description ?? null,
-      type: machine.type,
-      machineData: machine,
-      createdAt: now,
-      updatedAt: now,
-    });
-
+  async updateMachine(
+    id: string,
+    machine: AnyMachine,
+    description?: string
+  ): Promise<SavedMachineEntity | null> {
+    const record = await this.repo.updateWithRelations(id, machine, description);
+    if (!record) return null;
     return this.mapRecordToEntity(record);
   }
 

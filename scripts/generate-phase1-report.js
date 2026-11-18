@@ -65,9 +65,9 @@ function generatePdf() {
   );
   doc.moveDown(0.2);
   const task6Results = [
-    'Generated Moore States: S/ε, A_x/x, A_y/y, B_x/x, B_y/y (100% exact match).',
-    'Transition Table: S(0->A_x, 1->B_y); A_x(0->A_x, 1->B_y); A_y(0->A_x, 1->B_y); B_x(0->A_y, 1->B_x); B_y(0->A_y, 1->B_x).',
-    'Simulation on 1100: Mealy produces "yxyx"; Moore produces "εyxyx". Aligned output: "yxyx" ≡ "yxyx".',
+    'Generated Moore States: S (output ε), A_x (output x), A_y (output y), B_x (output x), B_y (output y). Total: 5 distinct states.',
+    'Complete Transition Table: S: 0->A_x, 1->B_y; A_x: 0->A_x, 1->B_y; A_y: 0->A_x, 1->B_y; B_x: 0->A_y, 1->B_x; B_y: 0->A_y, 1->B_x.',
+    'Simulation on 1100: Mealy produces "yxyx"; Moore produces "εyxyx". Aligned output: "yxyx" == "yxyx".',
     'Product Machine Proof: 4 reachable product pairs explored; 0 counterexamples; complete equivalence proven.',
   ];
   task6Results.forEach((res) => {
