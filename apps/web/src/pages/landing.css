@@ -1,0 +1,93 @@
+.cover-shell {--cover-ink:#461631;--cover-bg:#fcf8f3;background:var(--cover-bg);color:var(--cover-ink)}
+.dark .cover-shell {
+  --cover-ink:#f8e8d6;
+  --cover-bg:#382031;
+  --bg-background:#090a0f;
+  --bg-surface:#11131a;
+  --bg-surface-elevated:#171a24;
+  --bg-surface-hover:#1e2230;
+  --border-border:#222634;
+  --border-subtle:#1b1e2b;
+  --text-muted:#64748b;
+  background:var(--bg-background);
+  color:var(--text-primary);
+}
+.cover-shell .book-mast {background:transparent;color:inherit;border-bottom:1px solid #a39383;margin:0 3vw;padding-inline:0}
+.cover-shell .book-brand {font-family:Georgia,serif;font-size:clamp(1.75rem,3vw,2.8rem)}
+.cover-shell .book-mast nav {margin-inline-start:auto}
+.cover-shell .book-mast nav a:hover {background:#aa85952b}
+.cover-shell .book-mast>button {margin-left:0}
+.cover-shell .book-page {max-width:1600px}
+.cover-figure::before {
+  content:'';
+  position:absolute;
+  inset:-2.5rem max(-4vw,calc(-2vw - 26px)) -1.25rem;
+  z-index:-1;
+  pointer-events:none;
+  --grid-line:rgb(152 83 112 / 19%);
+  background-image:linear-gradient(var(--grid-line) 1px,transparent 1px),
+    linear-gradient(90deg,var(--grid-line) 1px,transparent 1px);
+  background-size:26px 26px;
+  mask-image:linear-gradient(to right,transparent,black 9%,black 91%,transparent),
+    linear-gradient(to bottom,transparent,black 10%,black 86%,transparent);
+  mask-composite:intersect;
+}
+.dark .cover-figure::before {--grid-line:rgb(232 189 209 / 16%)}
+.landing-cover {display:grid;grid-template-columns:minmax(0,.85fr) minmax(0,1.2fr);gap:3%;align-items:center;min-height:75vh;padding:3rem 0}
+.cover-subject {font:600 clamp(1.1rem,2vw,1.7rem) Georgia,serif}
+.cover-subject::after {display:block;content:'';width:4rem;height:3px;margin-top:.8rem;background:#b782aa}
+.cover-shell .cover-copy h1 {font:600 clamp(2.6rem,4.6vw,5rem)/1.03 Georgia,serif;letter-spacing:-.055em;margin:2rem 0 1.4rem}
+.cover-intro {font-size:clamp(1rem,1.45vw,1.4rem);line-height:1.5;max-width:38ch}
+.cover-actions {display:flex;flex-wrap:wrap;align-items:center;gap:1.4rem;margin-top:2.3rem}
+.cover-actions a:first-child {background:#702550;color:#fff9f3;display:inline-flex;align-items:center;gap:.8rem;border-radius:.4rem;padding:.75rem 1.35rem;font-weight:650}
+.dark .cover-actions a:first-child {background:#fae7d6;color:#421c32}
+.cover-actions a:last-child {text-decoration:underline;text-underline-offset:.28em;font:600 1.12rem Georgia,serif}
+.cover-figure {position:relative;isolation:isolate;padding:2.8rem 4% 2.4rem;color:#411830}
+.cover-sheet {
+  --fold:clamp(2rem,4vw,4rem);
+  --paper:linear-gradient(118deg,#fff4e9,#f3e2da 62%,#fff6ec);
+  position:relative;
+  isolation:isolate;
+  filter:drop-shadow(1px 2px 1px #492c353c) drop-shadow(5px 12px 8px #4c283440);
+}
+.cover-sheet::before {
+  content:'';position:absolute;inset:0;z-index:-1;
+  border:1px solid #fff7f0;border-radius:.6rem;
+  background:repeating-linear-gradient(113deg,transparent 0 3px,#86605606 4px,transparent 5px 8px),var(--paper);
+  box-shadow:inset 2px 2px 5px #fffaf4,inset -4px -5px 11px #78454c16;
+}
+.mealy-sheet {z-index:2;transform:perspective(850px) rotateY(-5deg) rotateZ(-2deg) skewX(-6deg);padding-bottom:6%}
+.mealy-sheet::before {clip-path:polygon(0 0,calc(100% - var(--fold)) 0,100% var(--fold),100% 100%,0 100%)}
+.mealy-sheet::after {
+  content:'';position:absolute;top:0;right:0;width:var(--fold);height:var(--fold);
+  background:linear-gradient(43deg,#d3b8a9 0%,#fff7e8 35%,#ead4c3 65%,#fff6ee);
+  clip-path:polygon(0 0,100% 100%,4% 83%);
+}
+.cover-sheet svg {width:100%;display:block;padding:3% 0 1%}
+.cover-sheet text {text-anchor:middle;fill:currentColor;font:italic 32px Georgia,serif}
+.cover-sheet .edge-symbol {font-size:25px}
+.cover-node {fill:#fbf4eb;stroke:currentColor;stroke-width:1.5}
+.cover-edge {fill:none;stroke:currentColor;stroke-width:1.7}
+.chosen-route {color:#8a2665}
+.chosen-route .cover-edge {stroke-width:2.6}
+.chosen-node .cover-node {fill:#ead2df}
+.sheet-tab {position:absolute;left:4%;bottom:calc(100% - 1px);background:linear-gradient(120deg,#fff9ea,#f2dfc7);border:1px solid #b89c72;box-shadow:inset 1px 2px 2px #fff9ee;padding:.22rem 1.2rem;border-radius:.75rem .75rem 0 0;font:italic 1.25rem Georgia,serif}
+.moore-sheet {--paper:linear-gradient(135deg,#fff6ee,#e9d3df 72%,#f6eaf0);transform:perspective(850px) rotateY(-4deg) rotateZ(2deg) skewX(-7deg);margin:-4% -1.5% 0 .5%;padding-top:5%}
+.moore-sheet .sheet-tab {left:auto;right:4%;bottom:auto;top:100%;border-radius:0 0 .6rem .6rem}
+.cover-rule {height:5px;position:relative;margin:-4% -2.5% 0;z-index:3;border-radius:1rem;background:linear-gradient(#fff3c2,#d9ac62 35%,#81592a 75%,#d7b778);box-shadow:0 3px 4px #643e3259;display:flex;align-items:center;justify-content:center}
+.cover-inputs {border:1px solid #aa8752;background:linear-gradient(#fffdf4,#f6e8d1);box-shadow:inset 0 1px 2px white,0 3px 5px #68432657;display:flex;align-items:center;gap:.25rem;border-radius:2rem;padding:.2rem .35rem;color:#492739}
+.cover-inputs span {font:italic .9rem Georgia,serif;margin:0 .3rem}
+.cover-inputs button {border-radius:50%;width:1.8rem;height:1.8rem;font-weight:600}
+.cover-inputs button:hover,.cover-inputs button[aria-pressed=true]{background:#653650;color:white}
+.cover-result {color:var(--cover-ink);font:italic 1rem Georgia,serif;padding:1.4rem 6rem 0 .3rem}
+.travel-dot {fill:#a02971;offset-distance:100%;opacity:0}
+@media(prefers-reduced-motion:no-preference){
+ .cover-copy,.cover-figure {animation:cover-arrive .55s ease-out both}
+ .cover-figure {animation-delay:.12s}
+ .travel-dot {animation:cover-trace .75s ease-in-out}
+ .cover-node,.cover-inputs button,.cover-actions a {transition:fill .25s,background .2s,transform .2s}
+ .cover-actions a:hover {transform:translateY(-2px)}
+ @keyframes cover-arrive {from{opacity:0;translate:0 10px}to{opacity:1;translate:0 0}}
+ @keyframes cover-trace {0%{offset-distance:0;opacity:1}90%{opacity:1}100%{offset-distance:100%;opacity:0}}
+}
+@media(max-width:800px){.landing-cover{grid-template-columns:1fr;gap:2.3rem;padding:1.5rem 0}.cover-shell .cover-copy h1{margin:1rem 0}.cover-actions{margin-top:1.2rem}.cover-figure{max-width:630px;width:100%;justify-self:center}.cover-shell .book-mast nav{margin-left:0}.cover-shell .book-mast>button{margin-left:auto}}

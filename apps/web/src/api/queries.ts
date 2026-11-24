@@ -42,8 +42,9 @@ export function useCreateMachineMutation() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (machine: AnyMachine) => api.createMachine(machine),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: MACHINE_KEYS.lists() });
+    onSuccess: (created) => {
+      queryClient.setQueryData(MACHINE_KEYS.detail(created.id), created);
+      return queryClient.invalidateQueries({ queryKey: MACHINE_KEYS.lists() });
     },
   });
 }

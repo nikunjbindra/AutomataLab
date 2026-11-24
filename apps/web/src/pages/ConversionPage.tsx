@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect, useCallback } from 'react';
+import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { PageHeader } from '../components/PageHeader.js';
 import { StatusBadge } from '../components/StatusBadge.js';
@@ -12,8 +12,11 @@ import {
   MANDATORY_TASK_6_MEALY,
   convertMealyToMoore,
   convertMooreToMealy,
+  verifyEquivalenceProductMachine,
+  simulateMealy,
+  simulateMoore,
 } from '@automatalab/automata';
-import type { AnyMachine, MealyMachine, MooreMachine } from '@automatalab/contracts';
+import { AnyMachineSchema, type AnyMachine, type MealyMachine, type MooreMachine } from '@automatalab/contracts';
 import { useMachinesQuery, useCreateMachineMutation } from '../api/queries.js';
 import { Layers, PlayCircle } from 'lucide-react';
 
@@ -52,9 +55,9 @@ function computeTargetVisibility(
   if (direction === 'mealy-to-moore') {
     const allStates = targetMachine.states;
     const moore = targetMachine as MooreMachine;
-    const splitStates = allStates.filter((s) => s !== 'S');
+    const splitStates = allStates.filter((s) => s !== targetMachine.initialState);
     const conflictSrc = Object.entries(stateMapping)
-      .filter(([, targets]) => targets.length > 1)
+      .filter(([, targets]) => targets.filter(state => state !== targetMachine.initialState).length > 1)
       .map(([src]) => src);
 
     // Transitions between split states (excluding S)
@@ -64,7 +67,7 @@ function computeTargetVisibility(
       for (const t of moore.transitions) {
         const key = `${t.fromState}->${t.toState}`;
         if (!allEdgeKeys.includes(key)) allEdgeKeys.push(key);
-        if (t.fromState !== 'S' && t.toState !== 'S') {
+        if (t.fromState !== targetMachine.initialState && t.toState !== targetMachine.initialState) {
           if (!splitEdgeKeys.includes(key)) splitEdgeKeys.push(key);
         }
       }
@@ -224,13 +227,19 @@ function computeTargetVisibility(
   }
 }
 
+const EMPTY_SAVED: import('@automatalab/contracts').SavedMachineEntity[] = [];
+
 export const ConversionPage: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const [savedId, setSavedId] = useState<string>();
 
   // Queries & Mutations
-  const { data: savedMachines = [] } = useMachinesQuery();
+  const { data: savedMachines = EMPTY_SAVED } = useMachinesQuery();
   const createMutation = useCreateMachineMutation();
+  const requestedId = new URLSearchParams(location.search).get('id') || location.state?.machineId;
+  const requestedMachine = savedMachines.find(machine => machine.id === requestedId);
+  const initializedRoute = useRef<string | null>(null);
 
   // Selected Machine & Direction
   const [selectedMachine, setSelectedMachine] = useState<AnyMachine>(MANDATORY_TASK_6_MEALY);
@@ -251,18 +260,26 @@ export const ConversionPage: React.FC = () => {
 
   // Check if routed with a specific machine ID from builder or dashboard
   useEffect(() => {
-    const queryParams = new URLSearchParams(location.search);
-    const machineId = queryParams.get('id') || (location.state as any)?.machineId;
-    if (machineId && savedMachines.length > 0) {
-      const match = savedMachines.find((m) => m.id === machineId);
-      if (match) {
-        setSelectedMachine(match.machineData as AnyMachine);
-        setDirection(match.type === 'moore' ? 'moore-to-mealy' : 'mealy-to-moore');
-        setCurrentStep(0);
-        setIsConverted(true);
-      }
+    if (initializedRoute.current === location.key) return;
+    const draft = AnyMachineSchema.safeParse(location.state?.draft);
+    if (draft.success) {
+      initializedRoute.current = location.key;
+      setSelectedMachine(draft.data);
+      setSavedId(location.state?.savedId);
+      setDirection(draft.data.type === 'mealy' ? 'mealy-to-moore' : 'moore-to-mealy');
+      setCurrentStep(0);
+      return;
     }
-  }, [location.search, location.state, savedMachines]);
+    const match = requestedMachine;
+    if (match) {
+      initializedRoute.current = location.key;
+      setSavedId(match.id);
+      setSelectedMachine(match.machineData);
+      setDirection(match.type === 'moore' ? 'moore-to-mealy' : 'mealy-to-moore');
+      setCurrentStep(0);
+      setIsConverted(true);
+    }
+  }, [location.key, location.state, requestedMachine]);
 
   // Execute mathematical conversion based on direction
   const conversionData = useMemo(() => {
@@ -301,7 +318,7 @@ export const ConversionPage: React.FC = () => {
               'Highlight source states reached with multiple distinct outputs (|InOutputs(q)| > 1). These states must be split into multiple Moore nodes.',
             invariant: '|InOutputs(q)| > 1 implies state q must be split into multiple Moore states.',
             highlightedSourceNodes: mealy.states.filter(
-              (s) => (res.stateMapping[s]?.length || 0) > 1
+              (s) => (res.stateMapping[s]?.filter(state => state !== res.machine.initialState).length || 0) > 1
             ),
           },
           {
@@ -311,7 +328,7 @@ export const ConversionPage: React.FC = () => {
             description:
               'Instantiate split Moore states q_y for each distinct output y ∈ InOutputs(q). States are displayed without transitions or outputs initially.',
             invariant: 'S_split = { q_y | q ∈ Q, y ∈ InOutputs(q) }',
-            highlightedTargetNodes: res.machine.states.filter((s) => s !== 'S'),
+            highlightedTargetNodes: res.machine.states.filter((s) => s !== res.machine.initialState),
           },
           {
             stepIndex: 4,
@@ -320,7 +337,7 @@ export const ConversionPage: React.FC = () => {
             description:
               'Reconstruct directed transitions between split states with input symbol labels: δ_M(q_y, a) = (δ(q, a))_λ(q, a).',
             invariant: 'Transitions route to the target clone matching the source Mealy transition output.',
-            highlightedTargetNodes: res.machine.states.filter((s) => s !== 'S'),
+            highlightedTargetNodes: res.machine.states.filter((s) => s !== res.machine.initialState),
           },
           {
             stepIndex: 5,
@@ -329,7 +346,7 @@ export const ConversionPage: React.FC = () => {
             description:
               'Reveal state-associated outputs: each Moore node q_y is assigned its fixed output symbol λ_M(q_y) = y inside the state divider.',
             invariant: 'λ_M: S_split → Δ binds outputs directly to Moore state nodes.',
-            highlightedTargetNodes: res.machine.states.filter((s) => s !== 'S'),
+            highlightedTargetNodes: res.machine.states.filter((s) => s !== res.machine.initialState),
           },
           {
             stepIndex: 6,
@@ -338,7 +355,7 @@ export const ConversionPage: React.FC = () => {
             description:
               'Introduce synthetic start state S with quiescent output marker ε and connect its outgoing transitions mirroring original start state q₀.',
             invariant: 'λ_M(S) = ε. S mimics all transitions of original start state q₀.',
-            highlightedTargetNodes: ['S'],
+            highlightedTargetNodes: [res.machine.initialState],
           },
           {
             stepIndex: 7,
@@ -351,9 +368,9 @@ export const ConversionPage: React.FC = () => {
           {
             stepIndex: 8,
             title: '9. Visual Output-Equivalence Validation',
-            shortLabel: 'Equivalence Proven',
+            shortLabel: 'Check equivalence',
             description:
-              'Verify behavioral equivalence on test sequence w = 1100: Mealy emits "yxyx" while Moore emits "εyxyx". Stripping initial ε confirms Moore(w)[1:] ≡ Mealy(w).',
+              'Compare the aligned outputs and inspect the reachable state pairs.',
             invariant: 'Moore(w)[1:] ≡ Mealy(w) for all w ∈ Σ*',
             highlightedSourceNodes: mealy.states,
             highlightedTargetNodes: res.machine.states,
@@ -514,13 +531,10 @@ export const ConversionPage: React.FC = () => {
 
   // Save converted machine to backend DB
   const handleSaveConverted = async () => {
+    if (!stages.length || createMutation.isPending ||
+        (createMutation.isSuccess && createMutation.variables === targetMachine)) return;
     try {
-      await createMutation.mutateAsync({
-        ...targetMachine,
-        name: `${targetMachine.name} (Converted)`,
-        description: `AutomataLab Phase 5 converted ${targetMachine.type} machine derived from ${selectedMachine.name}.`,
-      });
-      alert(`Successfully saved converted ${targetMachine.type.toUpperCase()} machine to your database!`);
+      await createMutation.mutateAsync(targetMachine);
     } catch (err) {
       console.error('Failed to save converted machine:', err);
       alert('Failed to save converted machine to database.');
@@ -537,6 +551,10 @@ export const ConversionPage: React.FC = () => {
     downloadAnchor.click();
     downloadAnchor.remove();
   };
+
+  const updateActiveStates = useCallback((source: string, target: string) => {
+    setActiveSimStates({ source, target });
+  }, []);
 
   // Highlights derived from hover and step
   const activeStage = stages[currentStep] || stages[0];
@@ -574,22 +592,36 @@ export const ConversionPage: React.FC = () => {
     [currentStep, direction, targetMachine, stateMapping]
   );
 
+  const finalCheck = useMemo(() => {
+    if (!targetVisibility.isEquivalenceStage || !stages.length) return null;
+    const inputs = ['1', '1', '0', '0'].every(symbol => selectedMachine.alphabet.includes(symbol))
+      ? ['1', '1', '0', '0'] : selectedMachine.alphabet;
+    const simulate = (machine: AnyMachine) => machine.type === 'mealy'
+      ? simulateMealy(machine, inputs) : simulateMoore(machine, inputs);
+    return {
+      inputs,
+      source: simulate(selectedMachine).outputSequence,
+      target: simulate(targetMachine).outputSequence,
+      proof: verifyEquivalenceProductMachine(selectedMachine, targetMachine),
+    };
+  }, [targetVisibility.isEquivalenceStage, stages.length, selectedMachine, targetMachine]);
+
   // Conflict source states for source diagram (stage 2 = step 2 for Mealy→Moore)
   const sourceConflictStates = useMemo(() => {
     if (direction === 'mealy-to-moore' && currentStep === 2) {
       return Object.entries(stateMapping)
-        .filter(([, targets]) => targets.length > 1)
+        .filter(([, targets]) => targets.filter(state => state !== targetMachine.initialState).length > 1)
         .map(([src]) => src);
     }
     return null;
-  }, [direction, currentStep, stateMapping]);
+  }, [direction, currentStep, stateMapping, targetMachine.initialState]);
 
   return (
     <div className="space-y-4 max-w-7xl mx-auto pb-12 select-none">
       {/* Header */}
       <PageHeader
-        title="Interactive Conversion Workspace"
-        description="Formal Mealy ↔ Moore bidirectional automata converter with step-by-step state transformation and synchronous simulation."
+        title="Conversion notebook"
+        description="Follow each transformation, then compare the two output tapes."
         badge={
           <StatusBadge
             variant="cyan"
@@ -602,9 +634,11 @@ export const ConversionPage: React.FC = () => {
       {/* Top Toolbar */}
       <ConversionToolbar
         selectedMachine={selectedMachine}
+        selectedId={savedId}
         savedMachines={savedMachines}
         onSelectSavedMachine={(m) => {
-          setSelectedMachine(m);
+          setSavedId(m.id);
+          setSelectedMachine(m.machineData);
           setDirection(m.type === 'moore' ? 'moore-to-mealy' : 'mealy-to-moore');
           setCurrentStep(0);
           setIsConverted(true);
@@ -612,6 +646,10 @@ export const ConversionPage: React.FC = () => {
         onOpenGallery={() => setIsGalleryOpen(true)}
         direction={direction}
         onDirectionChange={(dir) => {
+          if (dir !== direction) {
+            setSelectedMachine(stages.length ? targetMachine : dir === 'mealy-to-moore' ? MANDATORY_TASK_6_MEALY : BENCHMARK_EXAMPLES[2].machine);
+            setSavedId(undefined);
+          }
           setDirection(dir);
           setCurrentStep(0);
           setIsConverted(true);
@@ -620,15 +658,19 @@ export const ConversionPage: React.FC = () => {
           setCurrentStep(0);
           setIsConverted(true);
           setIsPlaying(true);
+          void handleSaveConverted();
         }}
         onReset={handleReset}
         onSaveConverted={handleSaveConverted}
         onExportJson={handleExportJson}
-        onEditInBuilder={() => navigate(`/builder?id=${selectedMachine.name}`)}
-        isConverted={isConverted}
+        onEditInBuilder={() => navigate('/builder', { state: { draft: selectedMachine, savedId } })}
+        isConverted={isConverted && stages.length > 0}
         isSaving={createMutation.isPending}
+        resultSaved={createMutation.isSuccess && createMutation.variables === targetMachine}
       />
 
+      {!stages.length && <p role="alert">Complete the transition table in the builder before converting this machine.</p>}
+      {stages.length > 0 && <>
       {/* Workspace Tabs: Conversion Visualization vs Dual Simulation */}
       <div className="flex items-center gap-1.5 border-b border-border pb-1 font-mono text-xs">
         <button
@@ -760,66 +802,6 @@ export const ConversionPage: React.FC = () => {
         </div>
       </div>
 
-      {/* STAGE 9: Visual Output-Equivalence Validation Banner */}
-      {targetVisibility.isEquivalenceStage && (
-        <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-4 font-mono text-xs shadow-subtle space-y-3">
-          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-emerald-500/20 pb-2">
-            <div className="flex items-center gap-2 text-accent-emerald font-bold">
-              <span className="w-2 h-2 rounded-full bg-emerald-500" />
-              <span className="text-[12px]">Stage 9: Mathematical Equivalence Verified (Input w = 1100)</span>
-            </div>
-            <button
-              type="button"
-              onClick={() => setActiveTab('simulation')}
-              className="px-2.5 py-1 rounded bg-accent-blue text-white font-bold text-[11px] hover:bg-accent-blue/90 transition-colors"
-            >
-              Open Full Dual Simulation Tape →
-            </button>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-[11px]">
-            <div className="p-2.5 rounded-lg bg-surface/80 border border-border-subtle space-y-1">
-              <span className="text-foreground-muted font-bold block">Input Sequence (w):</span>
-              <div className="flex items-center gap-1 text-foreground font-bold text-sm">
-                <span className="px-1.5 py-0.5 rounded bg-surface-elevated border border-border">1</span>
-                <span className="px-1.5 py-0.5 rounded bg-surface-elevated border border-border">1</span>
-                <span className="px-1.5 py-0.5 rounded bg-surface-elevated border border-border">0</span>
-                <span className="px-1.5 py-0.5 rounded bg-surface-elevated border border-border">0</span>
-              </div>
-            </div>
-
-            <div className="p-2.5 rounded-lg bg-surface/80 border border-border-subtle space-y-1">
-              <span className="text-foreground-muted font-bold block">
-                {selectedMachine.type === 'mealy' ? 'Source Mealy Output:' : 'Source Moore Output:'}
-              </span>
-              <div className="text-accent-blue font-bold text-sm">
-                {selectedMachine.type === 'mealy' ? 'y x y x' : 'ε · y x y x'}
-              </div>
-              <span className="text-[10px] text-foreground-muted">4 tokens produced on transitions</span>
-            </div>
-
-            <div className="p-2.5 rounded-lg bg-surface/80 border border-border-subtle space-y-1">
-              <span className="text-foreground-muted font-bold block">
-                {targetMachine.type === 'moore' ? 'Converted Moore Output:' : 'Converted Mealy Output:'}
-              </span>
-              <div className="text-accent-indigo font-bold text-sm flex items-center gap-1">
-                {targetMachine.type === 'moore' ? (
-                  <>
-                    <span className="text-accent-amber font-bold">ε</span>
-                    <span>·</span>
-                    <span>y x y x</span>
-                  </>
-                ) : (
-                  <span>y x y x</span>
-                )}
-              </div>
-              <span className="text-[10px] text-accent-emerald font-semibold">
-                {targetMachine.type === 'moore' ? 'Moore(w)[1:] ≡ Mealy(w) (100% Match)' : 'Output streams match'}
-              </span>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* BOTTOM SECTION: Stepper OR Dual Simulation */}
       {activeTab === 'conversion' ? (
@@ -842,18 +824,27 @@ export const ConversionPage: React.FC = () => {
         <DualSimulationPanel
           sourceMachine={selectedMachine}
           convertedMachine={targetMachine}
-          onActiveStatesChange={(sourceState, targetState) => {
-            setActiveSimStates({ source: sourceState, target: targetState });
-          }}
+          onActiveStatesChange={updateActiveStates}
         />
       )}
 
+      {finalCheck && activeTab === 'conversion' && (
+        <section className="rounded-xl border border-border bg-surface p-4">
+          <h2 className="font-semibold">{finalCheck.proof.isEquivalent ? 'Equivalent after initial-output alignment' : 'Outputs differ'}</h2>
+          <p>Input {finalCheck.inputs.join(' · ')} · Source [{finalCheck.source.join(' ')}] · Converted [{finalCheck.target.join(' ')}]</p>
+          <p>{finalCheck.proof.reachablePairsCount} reachable state pairs checked.</p>
+          <button className="text-accent-blue underline" onClick={() => setActiveTab('simulation')}>Compare outputs and inspect the equivalence check →</button>
+        </section>
+      )}
+
+      </>}
       {/* Predefined Example Gallery Modal */}
       <ExampleGalleryModal
         isOpen={isGalleryOpen}
         onClose={() => setIsGalleryOpen(false)}
         selectedId={selectedMachine.name}
         onSelect={(ex) => {
+          setSavedId(undefined);
           setSelectedMachine(ex.machine);
           setDirection(ex.recommendedDirection);
           setCurrentStep(0);

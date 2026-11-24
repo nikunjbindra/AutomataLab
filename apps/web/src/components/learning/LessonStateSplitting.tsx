@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { PlaybackBar } from './PlaybackBar.js';
 import { StatusBadge } from '../StatusBadge.js';
+import { SplitFigure } from './SplitFigure.js';
 import { Split } from 'lucide-react';
 
 export const LessonStateSplitting: React.FC = () => {
@@ -12,28 +13,28 @@ export const LessonStateSplitting: React.FC = () => {
 
   const stepsMeta = [
     {
-      title: '1. Inspect Incoming Transitions to State A',
-      caption: 'In Mealy machine, State A is reached from A (via input 0 / output x) and from B (via input 0 / output y).',
+      title: '1. Find the arrows into A',
+      caption: 'Start at A and read 0: you stay at A and get x. Start at B and read 0: you reach A and get y.',
       conflict: false,
     },
     {
-      title: '2. Detect Output Conflict',
-      caption: 'State A receives two conflicting outputs: {x, y}. But in Moore, a state can emit only ONE fixed output!',
+      title: '2. Compare the answers',
+      caption: 'Both arrows end at A. Which answer would you write inside A: x or y? One circle cannot show both.',
       conflict: true,
     },
     {
-      title: '3. Clone & Split State A into A_x and A_y',
-      caption: 'Create distinct Moore states for each distinct output: A_x (assigned output x) and A_y (assigned output y).',
+      title: '3. Draw two copies of A',
+      caption: 'Write x inside one copy and y inside the other. Call them Aₓ and Aᵧ.',
       conflict: false,
     },
     {
-      title: '4. Redirect Incoming Transitions',
-      caption: 'Rewire transitions: input 0 with output x routes to A_x; input 0 with output y routes to A_y.',
+      title: '4. Point each arrow to its copy',
+      caption: 'Point the arrow that gave x to Aₓ. Point the arrow that gave y to Aᵧ.',
       conflict: false,
     },
     {
-      title: '5. Replicate Outgoing Transitions',
-      caption: 'Both A_x and A_y inherit original outgoing transitions of A: on 0 they go to A_x, on 1 they go to B_y.',
+      title: '5. Try the next input',
+      caption: 'From either copy, 0 takes you to Aₓ and 1 takes you to Bᵧ.',
       conflict: false,
     },
   ];
@@ -88,6 +89,8 @@ export const LessonStateSplitting: React.FC = () => {
 
   return (
     <div className="space-y-5">
+      <SplitFigure />
+      <details className="lesson-detail"><summary>Explore the five construction steps</summary><div className="space-y-4 pt-4">
       {/* Step Header */}
       <div className="flex items-center justify-between p-3 rounded-xl border border-border bg-surface-elevated/50">
         <div className="flex items-center gap-2">
@@ -290,6 +293,8 @@ export const LessonStateSplitting: React.FC = () => {
         caption={activeMeta.caption}
       />
 
+      </div></details>
+      <details className="lesson-detail"><summary>Read the formal rules</summary>
       {/* Mathematical Principle */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs font-mono">
         <div className="p-3 rounded-xl border border-border bg-surface-elevated/40 space-y-1">
@@ -312,7 +317,7 @@ export const LessonStateSplitting: React.FC = () => {
             δ_M(q_y, a) = (δ(q, a))_λ(q, a). Next state depends on original Mealy transition's output!
           </p>
         </div>
-      </div>
+      </div></details>
     </div>
   );
 };

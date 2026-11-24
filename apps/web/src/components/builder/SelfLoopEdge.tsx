@@ -1,18 +1,19 @@
 import React from 'react';
-import { BaseEdge, EdgeProps, getBezierPath } from '@xyflow/react';
+import { BaseEdge, EdgeProps, useInternalNode } from '@xyflow/react';
 
 export const SelfLoopEdge: React.FC<EdgeProps> = ({
   id,
+  source, target, data,
   sourceX,
   sourceY,
-  targetX,
-  targetY,
   label,
   markerEnd,
   style,
   selected,
 }) => {
-  const isSelf = Math.abs(sourceX - targetX) < 10 && Math.abs(sourceY - targetY) < 10;
+  const start = useInternalNode(source);
+  const end = useInternalNode(target);
+  const isSelf = source === target;
 
   if (isSelf) {
     // Generate an upward circular loop path for self-loops
@@ -52,13 +53,29 @@ export const SelfLoopEdge: React.FC<EdgeProps> = ({
     );
   }
 
-  // Regular bezier curved edge between different nodes
-  const [edgePath, labelX, labelY] = getBezierPath({
-    sourceX,
-    sourceY,
-    targetX,
-    targetY,
-  });
+  if (!start?.measured.width || !end?.measured.width) return null;
+  const r1 = start.measured.width / 2;
+  const r2 = end.measured.width / 2;
+  const ax = start.internals.positionAbsolute.x + r1;
+  const ay = start.internals.positionAbsolute.y + r1;
+  const bx = end.internals.positionAbsolute.x + r2;
+  const by = end.internals.positionAbsolute.y + r2;
+  const distance = Math.hypot(bx - ax, by - ay);
+  if (!distance) return null;
+  const ux = (bx - ax) / distance;
+  const uy = (by - ay) / distance;
+  // Each direction bends to its own left. The endpoints follow the circle rims.
+  const bend = data?.paired ? Math.min(58, distance * 0.4) : 0;
+  const cx = (ax + bx) / 2 - uy * bend;
+  const cy = (ay + by) / 2 + ux * bend;
+  const controlDistance = Math.hypot(distance / 2, bend);
+  const sx = ax + (cx - ax) * r1 / controlDistance;
+  const sy = ay + (cy - ay) * r1 / controlDistance;
+  const tx = bx + (cx - bx) * (r2 + 2) / controlDistance;
+  const ty = by + (cy - by) * (r2 + 2) / controlDistance;
+  const edgePath = 'M ' + sx + ' ' + sy + ' Q ' + cx + ' ' + cy + ' ' + tx + ' ' + ty;
+  const labelX = (sx + 2 * cx + tx) / 4;
+  const labelY = (sy + 2 * cy + ty) / 4;
 
   return (
     <>

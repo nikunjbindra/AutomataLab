@@ -44,6 +44,23 @@ export const AutomataGraphCanvas: React.FC<AutomataGraphCanvasProps> = ({
 
     return machine.states.map((state) => {
       const pos = nodePositions[state] || { x: 300, y: 200 };
+      // Keep the start marker on an exposed side as nearby states move.
+      let startAngle = 180;
+      if (machine.initialState === state) {
+        const neighbors = machine.states.filter(other => other !== state && nodePositions[other]);
+        const hasLoop = machine.transitions.some(t => t.fromState === state && t.toState === state);
+        let best = -Infinity;
+        for (const angle of [180, 0, 90, 225, 315, 135, 45, 270]) {
+          const radians = angle * Math.PI / 180;
+          const x = pos.x + 48 * Math.cos(radians);
+          const y = pos.y + 48 * Math.sin(radians);
+          let clearance = hasLoop ? Math.hypot(x - pos.x, y - (pos.y - 55)) : Infinity;
+          for (const other of neighbors) {
+            clearance = Math.min(clearance, Math.hypot(x - nodePositions[other].x, y - nodePositions[other].y));
+          }
+          if (clearance > best) { best = clearance; startAngle = angle; }
+        }
+      }
       return {
         id: state,
         type: 'stateNode',
@@ -51,6 +68,7 @@ export const AutomataGraphCanvas: React.FC<AutomataGraphCanvasProps> = ({
         selected: selectedState === state,
         data: {
           label: state,
+          startAngle,
           isInitial: machine.initialState === state,
           type: machine.type,
           output: isMoore ? moore.stateOutputs?.[state] : undefined,
@@ -90,11 +108,15 @@ export const AutomataGraphCanvas: React.FC<AutomataGraphCanvasProps> = ({
       const isSelf = from === to;
       const combinedLabel = labels.join(', ');
 
+      const paired = !isSelf && transitionGroups.has(to + '->' + from);
       resultEdges.push({
         id: `edge-${from}-${to}`,
         source: from,
         target: to,
-        type: isSelf ? 'selfLoop' : 'selfLoop',
+        type: 'selfLoop',
+        sourceHandle: 'top-source',
+        targetHandle: 'top-target',
+        data: { paired },
         label: combinedLabel,
         markerEnd: {
           type: MarkerType.ArrowClosed,

@@ -5,6 +5,7 @@ import { ArrowRight } from 'lucide-react';
 export interface StateNodeData {
   label: string;
   isInitial: boolean;
+  startAngle: number;
   type: 'mealy' | 'moore';
   output?: string;
 }
@@ -72,7 +73,8 @@ export const StateNode = memo(({ data, selected }: NodeProps) => {
       {/* Initial State Arrow Indicator (JFLAP style incoming pointer) */}
       {isInitial && (
         <div
-          className="absolute -left-7 top-1/2 -translate-y-1/2 flex items-center text-accent-cyan pointer-events-none"
+          className="absolute left-1/2 top-1/2 flex items-center text-accent-cyan pointer-events-none"
+          style={{ transform: `translate(-50%, -50%) rotate(${nodeData.startAngle}deg) translateX(46px) rotate(180deg)` }}
           title="Initial State"
         >
           <ArrowRight className="w-5 h-5 animate-pulse" />

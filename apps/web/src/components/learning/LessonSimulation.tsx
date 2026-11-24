@@ -74,9 +74,9 @@ export const LessonSimulation: React.FC = () => {
   // Run simulation
   const simTrace = useMemo(() => {
     if (activeOption.machine.type === 'moore') {
-      return simulateMoore(activeOption.machine as any, inputStr);
+      return simulateMoore(activeOption.machine, inputStr);
     }
-    return simulateMealy(activeOption.machine as any, inputStr);
+    return simulateMealy(activeOption.machine, inputStr);
   }, [activeOption.machine, inputStr]);
 
   const totalSteps = inputStr.length;
@@ -129,13 +129,13 @@ export const LessonSimulation: React.FC = () => {
 
   // Compute active state and transition
   const stepRecord = simTrace.steps[currentStep] || simTrace.steps[0];
-  const activeState = stepRecord.currentState;
+  const activeState = stepRecord.nextState ?? stepRecord.currentState;
 
   const activeTransition =
     currentStep > 0 && stepRecord.inputSymbol
       ? {
-          from: simTrace.steps[currentStep - 1].currentState,
-          to: stepRecord.currentState,
+          from: stepRecord.currentState,
+          to: activeState,
           input: stepRecord.inputSymbol,
         }
       : null;
@@ -244,6 +244,21 @@ export const LessonSimulation: React.FC = () => {
             height={320}
             badge={`${activeOption.machine.name} Simulation`}
           />
+          {/* Playback Controls */}
+          <PlaybackBar
+            currentStep={currentStep}
+            totalSteps={totalSteps}
+            isPlaying={isPlaying}
+            speed={speed}
+            onPlayToggle={handlePlayToggle}
+            onStepNext={handleStepNext}
+            onStepPrev={handleStepPrev}
+            onReset={handleReset}
+            onSpeedChange={setSpeed}
+            onSeek={setCurrentStep}
+            caption={caption}
+          />
+
         </div>
 
         {/* Telemetry & Tape Panel (1 col) */}
@@ -305,20 +320,7 @@ export const LessonSimulation: React.FC = () => {
         </div>
       </div>
 
-      {/* Playback Controls */}
-      <PlaybackBar
-        currentStep={currentStep}
-        totalSteps={totalSteps}
-        isPlaying={isPlaying}
-        speed={speed}
-        onPlayToggle={handlePlayToggle}
-        onStepNext={handleStepNext}
-        onStepPrev={handleStepPrev}
-        onReset={handleReset}
-        onSpeedChange={setSpeed}
-        onSeek={setCurrentStep}
-        caption={caption}
-      />
+
     </div>
   );
 };

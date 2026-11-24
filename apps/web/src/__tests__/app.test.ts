@@ -16,7 +16,6 @@ import { DashboardPage } from '../pages/DashboardPage.js';
 import { BuilderPage } from '../pages/BuilderPage.js';
 import { ConversionPage } from '../pages/ConversionPage.js';
 import { SimulationPage } from '../pages/SimulationPage.js';
-import { TestResultsPage } from '../pages/TestResultsPage.js';
 import { DocumentationPage } from '../pages/DocumentationPage.js';
 
 describe('AutomataLab Frontend Architecture & Component Test Suite', () => {
@@ -36,7 +35,6 @@ describe('AutomataLab Frontend Architecture & Component Test Suite', () => {
     expect(typeof BuilderPage).toBe('function');
     expect(typeof ConversionPage).toBe('function');
     expect(typeof SimulationPage).toBe('function');
-    expect(typeof TestResultsPage).toBe('function');
     expect(typeof DocumentationPage).toBe('function');
   });
 

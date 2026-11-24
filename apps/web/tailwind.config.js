@@ -17,16 +17,16 @@ export default {
         border: {
           DEFAULT: 'var(--border-border)',
           subtle: 'var(--border-subtle)',
-          focus: '#3B82F6',
+          focus: '#70415e',
         },
         primary: {
-          DEFAULT: '#3B82F6',
-          hover: '#2563EB',
+          DEFAULT: '#70415e',
+          hover: '#562d48',
           subtle: 'rgba(59, 130, 246, 0.1)',
         },
         accent: {
-          indigo: '#6366F1',
-          blue: '#3B82F6',
+          indigo: '#81506e',
+          blue: '#70415e',
           cyan: '#06B6D4',
           violet: '#8B5CF6',
           emerald: '#10B981',

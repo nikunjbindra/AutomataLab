@@ -4,7 +4,6 @@ import {
   LayoutDashboard,
   Cpu,
   Workflow,
-  FlaskConical,
   GraduationCap,
   Layers,
   ChevronLeft,
@@ -48,11 +47,6 @@ const navItems: NavItem[] = [
     to: '/docs',
     label: 'Visual Learning Lab',
     icon: GraduationCap,
-  },
-  {
-    to: '/tests',
-    label: 'Verification & Tests',
-    icon: FlaskConical,
   },
 ];
 

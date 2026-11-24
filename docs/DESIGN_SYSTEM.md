@@ -1,6 +1,6 @@
 # AutomataLab — Design System & UI Specifications
 
-AutomataLab adopts a **developer-tool aesthetic** inspired by the technical elegance of Linear, Vercel, and React Flow, without duplicating any of them. The visual language is optimized for dense information display, high legibility of mathematical formalisms, crisp structural hierarchy, and responsive interactive state manipulation.
+AutomataLab uses a Guided Notebook layout. An ivory page, plum masthead and serif lesson headings sit alongside the builder, conversion diagrams and simulation tapes. Lesson contents move above the article on narrow screens.
 
 ---
 
@@ -24,10 +24,10 @@ AutomataLab adopts a **developer-tool aesthetic** inspired by the technical eleg
 ### 2.1 Theme Neutrals (Dark & Light Foundations)
 | Token | Light Value | Dark Value | Purpose |
 |---|---|---|---|
-| `bg-background` | `#FFFFFF` | `#090A0F` | Root application canvas |
-| `bg-surface` | `#F8FAFC` | `#11131A` | Cards, panels, sidebar, toolbar |
-| `bg-surface-elevated` | `#FFFFFF` | `#171A24` | Dialogs, context menus, tooltips |
-| `border-border` | `#E2E8F0` | `#222634` | Hairline panel and node borders |
+| `bg-background` | `#F9F6EF` | `#090A0F` | Root application canvas |
+| `bg-surface` | `#FFFCF7` | `#11131A` | Cards, panels, sidebar, toolbar |
+| `bg-surface-elevated` | `#F9F6EF` | `#171A24` | Dialogs, context menus, tooltips |
+| `border-border` | `#D9CEC3` | `#222634` | Hairline panel and node borders |
 | `border-border-subtle`| `#F1F5F9` | `#1B1E2B` | Internal cell and separator dividers |
 | `text-primary` | `#0F172A` | `#F1F5F9` | Headers, primary labels, active states |
 | `text-secondary` | `#475569` | `#94A3B8` | Descriptions, secondary meta, tape head |
@@ -36,7 +36,7 @@ AutomataLab adopts a **developer-tool aesthetic** inspired by the technical eleg
 ### 2.2 Semantic Accent Tokens
 | Accent Role | Token / Hex | Context of Use |
 |---|---|---|
-| **Brand / Focus** | Indigo (`#6366F1`) / Blue (`#3B82F6`) | Primary buttons, active state node ring, selected row |
+| **Brand / Focus** | Plum (`#81506E`) / Ink (`#70415E`) | Primary buttons, active state node ring, selected row |
 | **Success / Valid** | Emerald (`#10B981`) | Verified equivalence, valid machine definition, accepted string |
 | **Warning / Notice** | Amber (`#F59E0B`) | Unreachable states, split state indicator, step warnings |
 | **Destructive / Error** | Rose / Crimson (`#EF4444`) | Disjoint alphabet, undefined transition, invalid symbol, counterexample |

@@ -1,3 +1,4 @@
+import { MachineFlashcard } from './MachineFlashcard.js';
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { PlaybackBar } from './PlaybackBar.js';
 import { TapeDisplay } from './TapeDisplay.js';
@@ -79,14 +80,14 @@ export const LessonMealyVsMoore: React.FC = () => {
   const mealyStep = mealySim.steps[currentStep] || mealySim.steps[0];
   const mooreStep = mooreSim.steps[currentStep] || mooreSim.steps[0];
 
-  const mealyActiveState = mealyStep.currentState;
-  const mooreActiveState = mooreStep.currentState;
+  const mealyActiveState = mealyStep.nextState ?? mealyStep.currentState;
+  const mooreActiveState = mooreStep.nextState ?? mooreStep.currentState;
 
   const mealyActiveTransition =
     currentStep > 0 && mealyStep.inputSymbol
       ? {
-          from: mealySim.steps[currentStep - 1].currentState,
-          to: mealyStep.currentState,
+          from: mealyStep.currentState,
+          to: mealyActiveState,
           input: mealyStep.inputSymbol,
         }
       : null;
@@ -94,8 +95,8 @@ export const LessonMealyVsMoore: React.FC = () => {
   const mooreActiveTransition =
     currentStep > 0 && mooreStep.inputSymbol
       ? {
-          from: mooreSim.steps[currentStep - 1].currentState,
-          to: mooreStep.currentState,
+          from: mooreStep.currentState,
+          to: mooreActiveState,
           input: mooreStep.inputSymbol,
         }
       : null;
@@ -103,12 +104,12 @@ export const LessonMealyVsMoore: React.FC = () => {
   // Explanatory dynamic caption
   const caption = useMemo(() => {
     if (currentStep === 0) {
-      return "Initial State: Mealy (A) emits nothing. Moore (S) emits initial output 'ε' before any input is read.";
+      return "Before the first input, Mealy has no answer yet. The starting Moore circle shows ε, which means empty.";
     }
     const inSym = inputStr[currentStep - 1];
     const mealyOut = mealyStep.emittedOutput;
     const mooreOut = mooreStep.emittedOutput;
-    return `Step ${currentStep} (Input '${inSym}'): Mealy outputs '${mealyOut}' ON transition. Moore enters '${mooreActiveState}' which outputs '${mooreOut}'.`;
+    return `Step ${currentStep} (Input '${inSym}'): The Mealy arrow gives '${mealyOut}'. The Moore circle '${mooreActiveState}' gives '${mooreOut}'.`;
   }, [currentStep, inputStr, mealyStep, mooreStep, mooreActiveState]);
 
   return (
@@ -155,6 +156,21 @@ export const LessonMealyVsMoore: React.FC = () => {
         </div>
       </div>
 
+      {/* Playback Controls */}
+      <PlaybackBar
+        currentStep={currentStep}
+        totalSteps={totalSteps}
+        isPlaying={isPlaying}
+        speed={speed}
+        onPlayToggle={handlePlayToggle}
+        onStepNext={handleStepNext}
+        onStepPrev={handleStepPrev}
+        onReset={handleReset}
+        onSpeedChange={setSpeed}
+        onSeek={setCurrentStep}
+        caption={caption}
+      />
+
       {/* Side-by-Side Machine Diagrams */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Left: Mealy Machine */}
@@ -177,6 +193,7 @@ export const LessonMealyVsMoore: React.FC = () => {
             height={260}
             badge="Mealy: Transition-Coupled Output"
           />
+          <MachineFlashcard machine="Mealy" />
 
           <TapeDisplay
             inputSymbols={inputStr.split('')}
@@ -206,6 +223,7 @@ export const LessonMealyVsMoore: React.FC = () => {
             height={260}
             badge="Moore: State-Coupled Output"
           />
+          <MachineFlashcard machine="Moore" />
 
           <TapeDisplay
             inputSymbols={inputStr.split('')}
@@ -217,20 +235,7 @@ export const LessonMealyVsMoore: React.FC = () => {
         </div>
       </div>
 
-      {/* Playback Controls */}
-      <PlaybackBar
-        currentStep={currentStep}
-        totalSteps={totalSteps}
-        isPlaying={isPlaying}
-        speed={speed}
-        onPlayToggle={handlePlayToggle}
-        onStepNext={handleStepNext}
-        onStepPrev={handleStepPrev}
-        onReset={handleReset}
-        onSpeedChange={setSpeed}
-        onSeek={setCurrentStep}
-        caption={caption}
-      />
+
 
       {/* Compact Visual Concept Comparison */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs font-mono">
@@ -238,24 +243,24 @@ export const LessonMealyVsMoore: React.FC = () => {
         <div className="p-4 rounded-xl border border-blue-500/30 bg-blue-500/5 dark:bg-blue-500/10 space-y-2">
           <div className="flex items-center justify-between">
             <span className="font-bold text-accent-blue uppercase tracking-wider text-[11px]">
-              Mealy Flow (Output on Edge)
+              Mealy · read the arrow
             </span>
-            <span className="text-[10px] text-foreground-muted">Length = |w|</span>
+            <span className="text-[10px] text-foreground-muted">One answer per input</span>
           </div>
 
           <div className="flex items-center justify-center gap-2 py-2 px-3 rounded-lg bg-surface border border-border text-foreground font-bold text-xs">
-            <span className="px-2 py-1 rounded bg-surface-elevated border border-border">Input (a)</span>
+            <span className="px-2 py-1 rounded bg-surface-elevated border border-border">Read input</span>
             <span className="text-accent-blue font-mono font-bold">→</span>
             <span className="px-2 py-1 rounded bg-blue-500/20 text-accent-blue border border-blue-500/40">
-              Transition δ(q, a)
+              Follow arrow
             </span>
             <span className="text-accent-blue font-mono font-bold">→</span>
             <span className="px-2 py-1 rounded bg-emerald-500/20 text-accent-emerald border border-emerald-500/40">
-              Output λ(q, a)
+              Read arrow label
             </span>
           </div>
           <p className="text-[11px] text-foreground-muted leading-relaxed">
-            Outputs are generated synchronously during transition traversal. For input of length N, exactly N outputs are emitted.
+            An arrow marked 1/y means “when you read 1, follow this arrow and give the answer y.”
           </p>
         </div>
 
@@ -263,24 +268,24 @@ export const LessonMealyVsMoore: React.FC = () => {
         <div className="p-4 rounded-xl border border-indigo-500/30 bg-indigo-500/5 dark:bg-indigo-500/10 space-y-2">
           <div className="flex items-center justify-between">
             <span className="font-bold text-accent-indigo uppercase tracking-wider text-[11px]">
-              Moore Flow (Output in State)
+              Moore · read the circle
             </span>
-            <span className="text-[10px] text-foreground-muted">Length = |w| + 1</span>
+            <span className="text-[10px] text-foreground-muted">Includes the start</span>
           </div>
 
           <div className="flex items-center justify-center gap-2 py-2 px-3 rounded-lg bg-surface border border-border text-foreground font-bold text-xs">
-            <span className="px-2 py-1 rounded bg-surface-elevated border border-border">Input (a)</span>
+            <span className="px-2 py-1 rounded bg-surface-elevated border border-border">Read input</span>
             <span className="text-accent-indigo font-mono font-bold">→</span>
             <span className="px-2 py-1 rounded bg-indigo-500/20 text-accent-indigo border border-indigo-500/40">
-              Target State s'
+              Reach circle
             </span>
             <span className="text-accent-indigo font-mono font-bold">→</span>
             <span className="px-2 py-1 rounded bg-emerald-500/20 text-accent-emerald border border-emerald-500/40">
-              Output λ_M(s')
+              Read circle label
             </span>
           </div>
           <p className="text-[11px] text-foreground-muted leading-relaxed">
-            Outputs depend exclusively on entering the destination state. Emits synthetic initial marker <strong className="text-accent-amber">ε</strong> at t=0 before consuming input.
+            A circle marked B/y gives the answer y whenever you reach B. In this example, the starting circle shows <strong className="text-accent-amber">ε</strong> before you read the first input.
           </p>
         </div>
       </div>

@@ -14,7 +14,8 @@ import type { ConversionDirection } from './types.js';
 interface ConversionToolbarProps {
   selectedMachine: AnyMachine;
   savedMachines: SavedMachineEntity[];
-  onSelectSavedMachine: (machine: AnyMachine) => void;
+  selectedId?: string;
+  onSelectSavedMachine: (machine: SavedMachineEntity) => void;
   onOpenGallery: () => void;
   direction: ConversionDirection;
   onDirectionChange: (dir: ConversionDirection) => void;
@@ -25,11 +26,13 @@ interface ConversionToolbarProps {
   onEditInBuilder?: () => void;
   isConverted: boolean;
   isSaving?: boolean;
+  resultSaved?: boolean;
 }
 
 export const ConversionToolbar: React.FC<ConversionToolbarProps> = ({
   selectedMachine,
   savedMachines,
+  selectedId,
   onSelectSavedMachine,
   onOpenGallery,
   direction,
@@ -41,6 +44,7 @@ export const ConversionToolbar: React.FC<ConversionToolbarProps> = ({
   onEditInBuilder,
   isConverted,
   isSaving = false,
+  resultSaved = false,
 }) => {
   return (
     <div className="rounded-xl border border-border bg-surface p-3.5 shadow-subtle flex flex-col xl:flex-row items-stretch xl:items-center justify-between gap-3 select-none">
@@ -50,18 +54,17 @@ export const ConversionToolbar: React.FC<ConversionToolbarProps> = ({
           <label htmlFor="source-machine-select" className="text-xs font-mono font-bold text-foreground shrink-0">Machine:</label>
           <select
             id="source-machine-select"
-            value={selectedMachine.name}
+            value={selectedId ?? ''}
             onChange={(e) => {
-              const found = savedMachines.find((m) => m.name === e.target.value);
-              if (found) onSelectSavedMachine(found.machineData as AnyMachine);
+              const found = savedMachines.find((m) => m.id === e.target.value);
+              if (found) onSelectSavedMachine(found);
             }}
             className="px-2.5 py-1.5 text-xs font-mono rounded-lg border border-border bg-surface-elevated text-foreground focus:outline-none focus:border-accent-blue font-semibold max-w-[210px] truncate"
           >
-            <option value={selectedMachine.name}>{selectedMachine.name}</option>
+            {!savedMachines.some(m => m.id === selectedId) && <option value={selectedId ?? ''}>{selectedMachine.name}</option>}
             {savedMachines
-              .filter((m) => m.name !== selectedMachine.name)
               .map((m) => (
-                <option key={m.id} value={m.name}>
+                <option key={m.id} value={m.id}>
                   {m.name} ({m.type.toUpperCase()})
                 </option>
               ))}
@@ -140,11 +143,11 @@ export const ConversionToolbar: React.FC<ConversionToolbarProps> = ({
           <button
             type="button"
             onClick={onSaveConverted}
-            disabled={isSaving}
+            disabled={isSaving || resultSaved}
             className="px-3 py-1.5 rounded-lg border border-emerald-500/30 bg-emerald-500/10 hover:bg-emerald-500/20 text-accent-emerald text-xs font-mono font-bold flex items-center gap-1.5 transition-colors"
           >
             <Save className="w-3.5 h-3.5" />
-            <span>{isSaving ? 'Saving...' : 'Save Result'}</span>
+            <span>{isSaving ? 'Saving...' : resultSaved ? 'Result saved' : 'Save Result'}</span>
           </button>
         )}
 
@@ -162,6 +165,7 @@ export const ConversionToolbar: React.FC<ConversionToolbarProps> = ({
         <button
           type="button"
           onClick={onConvert}
+          disabled={isSaving || !isConverted}
           className="px-4 py-1.5 rounded-lg bg-accent-blue hover:bg-blue-600 text-white font-mono text-xs font-bold flex items-center gap-1.5 shadow-sm transition-all active:scale-95"
         >
           <Play className="w-3.5 h-3.5 fill-current" />

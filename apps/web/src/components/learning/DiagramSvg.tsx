@@ -175,6 +175,7 @@ export const DiagramSvg: React.FC<DiagramSvgProps> = ({
 
   const centerX = width / 2;
   const centerY = height / 2;
+  const edgeLabels: React.ReactElement[] = [];
 
   return (
     <div className={`relative rounded-xl border border-border bg-surface/60 overflow-hidden select-none ${className}`}>
@@ -277,6 +278,23 @@ export const DiagramSvg: React.FC<DiagramSvgProps> = ({
 
             const marker = isActive || isEdgeHighlighted ? 'url(#arrowhead-hi)' : 'url(#arrowhead-def)';
 
+            const label = transList.map(t => t.output === undefined ? t.input : t.input + '/' + t.output).join(', ');
+            const badgeWidth = Math.max(28, Array.from(label).length * 8 + 12);
+            function addLabel(x: number, y: number) {
+              const half = badgeWidth / 2;
+              const center = Math.max(half - 8, Math.min(width + 8 - half, x));
+              edgeLabels.push(
+                <g key={pairKey} className="transition-label cursor-pointer"
+                  data-selected={Boolean(isActive || isEdgeHighlighted)}
+                  transform={'translate(' + center + ',' + y + ')'}
+                  onClick={() => onEdgeClick?.(from, to, transList[0].input)}
+                  onMouseEnter={() => onEdgeHover?.(pairKey)} onMouseLeave={() => onEdgeHover?.(null)}>
+                  <rect x={-half} y="-10" width={badgeWidth} height="20" rx="4" />
+                  <text textAnchor="middle" dominantBaseline="central">{label}</text>
+                </g>
+              );
+            }
+
           // Self Loop with smart outward placement
           if (isSelfLoop) {
             const loopRadius = 22;
@@ -296,7 +314,7 @@ export const DiagramSvg: React.FC<DiagramSvgProps> = ({
                 const ly = p1.y;
                 d = `M ${lx} ${ly - 10} A ${loopRadius} ${loopRadius} 0 1 0 ${lx} ${ly + 10}`;
                 labelX = p1.x - nodeRadius - loopRadius - 6;
-                labelY = p1.y;
+                labelY = p1.y + (from === machine.initialState ? 20 : 0);
               } else {
                 // Loop Right
                 const lx = p1.x + nodeRadius;
@@ -321,9 +339,7 @@ export const DiagramSvg: React.FC<DiagramSvgProps> = ({
               labelY = p1.y - nodeRadius - loopRadius - 6;
             }
 
-            const labelText = transList
-              .map((t) => (t.output !== undefined ? `${t.input}/${t.output}` : t.input))
-              .join(', ');
+            addLabel(labelX, labelY);
 
             return (
               <g
@@ -346,27 +362,6 @@ export const DiagramSvg: React.FC<DiagramSvgProps> = ({
                     className="stroke-accent-blue/40 stroke-[6] animate-pulse"
                   />
                 )}
-                {/* Edge Label badge */}
-                <g transform={`translate(${labelX}, ${labelY})`}>
-                  <rect
-                    x="-20"
-                    y="-9"
-                    width="40"
-                    height="18"
-                    rx="4"
-                    className="fill-surface-elevated/95 stroke-border/70 stroke-[0.5]"
-                  />
-                  <text
-                    x="0"
-                    y="3"
-                    textAnchor="middle"
-                    className={`font-mono text-[10px] font-bold ${
-                      isActive ? 'fill-accent-blue' : 'fill-foreground-muted'
-                    }`}
-                  >
-                    {labelText}
-                  </text>
-                </g>
               </g>
             );
           }
@@ -398,9 +393,7 @@ export const DiagramSvg: React.FC<DiagramSvgProps> = ({
               ? `M ${sx} ${sy} L ${ex} ${ey}`
               : `M ${sx} ${sy} Q ${midX} ${midY} ${ex} ${ey}`;
 
-          const labelText = transList
-            .map((t) => (t.output !== undefined ? `${t.input}/${t.output}` : t.input))
-            .join(', ');
+          addLabel(midX, midY);
 
           return (
             <g
@@ -423,37 +416,10 @@ export const DiagramSvg: React.FC<DiagramSvgProps> = ({
                   className="stroke-accent-blue/30 stroke-[6] animate-pulse"
                 />
               )}
-
-              {/* Edge Label badge */}
-              <g transform={`translate(${midX}, ${midY})`}>
-                <rect
-                  x="-20"
-                  y="-9"
-                  width="40"
-                  height="18"
-                  rx="4"
-                  className={`stroke-[0.5] transition-colors ${
-                    isActive
-                      ? 'fill-accent-blue/20 stroke-accent-blue'
-                      : isEdgeHighlighted
-                      ? 'fill-accent-cyan/20 stroke-accent-cyan'
-                      : 'fill-surface-elevated/95 stroke-border'
-                  }`}
-                />
-                <text
-                  x="0"
-                  y="3"
-                  textAnchor="middle"
-                  className={`font-mono text-[10px] font-bold ${
-                    isActive ? 'fill-accent-blue' : 'fill-foreground'
-                  }`}
-                >
-                  {labelText}
-                </text>
-              </g>
             </g>
           );
         })}
+        {edgeLabels}
 
         {/* 2. NODES */}
         {machine.states.map((state) => {

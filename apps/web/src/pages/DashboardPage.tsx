@@ -173,8 +173,8 @@ export const DashboardPage: React.FC = () => {
     <div className="space-y-6">
       {/* Page Header */}
       <PageHeader
-        title="Automata Workbench Dashboard"
-        description="Persisted Mealy & Moore state machines, mathematical formalisms, and conversion pipelines."
+        title="Your machines"
+        description="Open a saved machine, start with an example, or build your own."
         actions={
           <div className="flex items-center gap-2">
             <button

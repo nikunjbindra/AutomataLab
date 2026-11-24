@@ -41,6 +41,21 @@ export const ConversionStepper: React.FC<ConversionStepperProps> = ({
 
   return (
     <div className="space-y-3 font-mono text-xs">
+      {/* Floating/Integrated Playback Controls */}
+      <PlaybackBar
+        currentStep={currentStep}
+        totalSteps={totalSteps}
+        isPlaying={isPlaying}
+        speed={speed}
+        onPlayToggle={onPlayToggle}
+        onStepNext={onStepNext}
+        onStepPrev={onStepPrev}
+        onReset={onReset}
+        onSpeedChange={onSpeedChange}
+        onSeek={onSeek}
+        caption={`Stage ${currentStep + 1} of ${totalSteps + 1}: ${activeStage.title}`}
+      />
+
       {/* Step Header & Explanation Card */}
       <div className="rounded-xl border border-border bg-surface p-4 shadow-subtle space-y-2">
         <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border-subtle pb-2">
@@ -79,20 +94,7 @@ export const ConversionStepper: React.FC<ConversionStepperProps> = ({
         )}
       </div>
 
-      {/* Floating/Integrated Playback Controls */}
-      <PlaybackBar
-        currentStep={currentStep}
-        totalSteps={totalSteps}
-        isPlaying={isPlaying}
-        speed={speed}
-        onPlayToggle={onPlayToggle}
-        onStepNext={onStepNext}
-        onStepPrev={onStepPrev}
-        onReset={onReset}
-        onSpeedChange={onSpeedChange}
-        onSeek={onSeek}
-        caption={`Stage ${currentStep + 1} of ${totalSteps + 1}: ${activeStage.title}`}
-      />
+
 
       {/* Collapsible Transition Matrix Comparison */}
       <div className="rounded-xl border border-border bg-surface overflow-hidden shadow-subtle">

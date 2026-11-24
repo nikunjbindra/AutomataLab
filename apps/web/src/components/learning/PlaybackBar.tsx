@@ -30,13 +30,15 @@ export const PlaybackBar: React.FC<PlaybackBarProps> = ({
   caption,
   className = '',
 }) => {
+  const controls = React.useRef<HTMLDivElement>(null);
   // Keyboard navigation shortcuts
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       // Don't trigger if user is typing in an input or textarea
-      if (['INPUT', 'TEXTAREA'].includes((e.target as HTMLElement).tagName)) {
+      if (['INPUT', 'TEXTAREA', 'SELECT', 'BUTTON', 'SUMMARY', 'A'].includes((e.target as HTMLElement).tagName)) {
         return;
       }
+      if (!controls.current?.getClientRects().length) return;
       if (e.key === ' ' || e.code === 'Space') {
         e.preventDefault();
         onPlayToggle();
@@ -59,7 +61,8 @@ export const PlaybackBar: React.FC<PlaybackBarProps> = ({
 
   return (
     <div
-      className={`rounded-xl border border-border bg-surface-elevated/95 shadow-md p-3 flex flex-col md:flex-row items-center justify-between gap-3 select-none backdrop-blur-sm transition-all ${className}`}
+      className={`rounded-lg border border-border bg-surface-elevated px-2 py-1.5 flex flex-wrap items-center gap-x-2 gap-y-1.5 select-none ${className}`}
+      ref={controls}
       role="region"
       aria-label="Animation Playback Controls"
     >
@@ -91,7 +94,7 @@ export const PlaybackBar: React.FC<PlaybackBarProps> = ({
           onClick={onPlayToggle}
           title={isPlaying ? 'Pause (Space)' : 'Play (Space)'}
           aria-label={isPlaying ? 'Pause' : 'Play'}
-          className={`px-3.5 py-1.5 rounded-lg flex items-center gap-1.5 font-medium text-xs transition-colors shadow-sm ${
+          className={`px-2.5 py-1.5 rounded-lg flex items-center gap-1.5 font-medium text-xs transition-colors shadow-sm ${
             isPlaying
               ? 'bg-accent-amber text-slate-950 font-semibold hover:bg-amber-400'
               : 'bg-accent-blue text-white font-semibold hover:bg-blue-600'
@@ -122,15 +125,15 @@ export const PlaybackBar: React.FC<PlaybackBarProps> = ({
         </button>
 
         {/* Stage Indicator (1-based for natural walkthrough: Stage 1/9 to Stage 9/9) */}
-        <div className="ml-2 font-mono text-xs text-foreground-muted">
+        <div className="ml-1 font-mono text-xs text-foreground-muted">
           Stage <span className="font-bold text-foreground">{currentStep + 1}</span> / {totalSteps + 1}
         </div>
       </div>
 
       {/* Middle: Caption or progress bar */}
-      <div className="flex-1 w-full max-w-xl px-2 flex flex-col items-center">
+      <div className="flex-1 min-w-[9rem] flex flex-col items-center">
         {caption && (
-          <div className="text-xs font-mono text-foreground text-center leading-relaxed break-words px-2.5 py-1 mb-1.5 w-full bg-surface/50 rounded-md border border-border-subtle">
+          <div className="text-xs font-mono text-foreground text-center leading-tight break-words mb-1 w-full">
             {caption}
           </div>
         )}

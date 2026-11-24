@@ -10,7 +10,8 @@ import { AutomataGraphCanvas } from '../components/builder/AutomataGraphCanvas.j
 import { ValidationPanel } from '../components/builder/ValidationPanel.js';
 import { PresetSelectorModal } from '../components/builder/PresetSelectorModal.js';
 import { useMachineEditor } from '../hooks/useMachineEditor.js';
-import { useMachineQuery } from '../api/queries.js';
+import { MACHINE_KEYS, useCreateMachineMutation, useMachineQuery } from '../api/queries.js';
+import { useQueryClient } from '@tanstack/react-query';
 import { api } from '../api/client.js';
 import {
   Save,
@@ -23,7 +24,7 @@ import {
   AlertCircle,
   ArrowRightLeft,
 } from 'lucide-react';
-import type { AnyMachine } from '@automatalab/contracts';
+import { AnyMachineSchema, type AnyMachine } from '@automatalab/contracts';
 
 export const BuilderPage: React.FC = () => {
   const navigate = useNavigate();
@@ -48,6 +49,8 @@ export const BuilderPage: React.FC = () => {
 
   // Editor hook
   const editor = useMachineEditor();
+  const createMachine = useCreateMachineMutation();
+  const queryClient = useQueryClient();
 
   // Load existing machine if passed via query param or route state
   const targetId = searchParams.get('id') || (location.state as { machineId?: string } | null)?.machineId;
@@ -59,6 +62,11 @@ export const BuilderPage: React.FC = () => {
     }
   }, [loadedMachine?.id]);
 
+  useEffect(() => {
+    const draft = AnyMachineSchema.safeParse(location.state?.draft);
+    if (draft.success) editor.loadMachine(draft.data, location.state?.savedId);
+  }, [location.key]);
+
   // Handle Save
   const handleSave = async () => {
     setIsSaving(true);
@@ -69,11 +77,13 @@ export const BuilderPage: React.FC = () => {
       if (editor.savedId) {
         // Update existing machine
         const updated = await api.updateMachine(editor.savedId, editor.machine);
+        queryClient.setQueryData(MACHINE_KEYS.detail(updated.id), updated);
+        await queryClient.invalidateQueries({ queryKey: MACHINE_KEYS.lists() });
         editor.markSaved(updated.id);
         setSaveSuccessMsg(`Machine "${updated.name}" updated successfully.`);
       } else {
         // Create new machine
-        const created = await api.createMachine(editor.machine);
+        const created = await createMachine.mutateAsync(editor.machine);
         editor.markSaved(created.id);
         setSaveSuccessMsg(`Machine "${created.name}" persisted to repository.`);
       }
@@ -97,7 +107,7 @@ export const BuilderPage: React.FC = () => {
       {/* Page Header */}
       <PageHeader
         title={editor.machine.name}
-        description="Interactive finite-state machine editor with synchronized graph canvas and transition matrix."
+        description="Edit a transition to see how it changes the diagram."
         badge={
           <div className="flex items-center gap-1.5">
             <StatusBadge
@@ -161,7 +171,7 @@ export const BuilderPage: React.FC = () => {
 
             <button
               type="button"
-              onClick={() => navigate('/convert', { state: { machineId: editor.savedId } })}
+              onClick={() => navigate('/convert', { state: { draft: editor.machine, savedId: editor.savedId } })}
               title="Go to Conversion Workspace"
               className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-md border border-indigo-500/30 bg-indigo-500/10 hover:bg-indigo-500/20 text-accent-indigo text-xs font-medium transition-colors"
             >

@@ -117,6 +117,21 @@ export const LessonConversionTrace: React.FC = () => {
         )}
       </div>
 
+      {/* Playback Controls */}
+      <PlaybackBar
+        currentStep={currentStep}
+        totalSteps={totalSteps}
+        isPlaying={isPlaying}
+        speed={speed}
+        onPlayToggle={handlePlayToggle}
+        onStepNext={handleStepNext}
+        onStepPrev={handleStepPrev}
+        onReset={handleReset}
+        onSpeedChange={setSpeed}
+        onSeek={setCurrentStep}
+        caption={`Stage ${activeStep.stepNumber} of ${steps.length}: ${activeStep.title}`}
+      />
+
       {/* Side-by-side: Source Mealy Machine vs Generated Moore Machine */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Source Mealy */}
@@ -192,20 +207,7 @@ export const LessonConversionTrace: React.FC = () => {
         </div>
       </div>
 
-      {/* Playback Controls */}
-      <PlaybackBar
-        currentStep={currentStep}
-        totalSteps={totalSteps}
-        isPlaying={isPlaying}
-        speed={speed}
-        onPlayToggle={handlePlayToggle}
-        onStepNext={handleStepNext}
-        onStepPrev={handleStepPrev}
-        onReset={handleReset}
-        onSpeedChange={setSpeed}
-        onSeek={setCurrentStep}
-        caption={`Stage ${activeStep.stepNumber} of ${steps.length}: ${activeStep.title}`}
-      />
+
     </div>
   );
 };

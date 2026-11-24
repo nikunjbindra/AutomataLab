@@ -26,8 +26,6 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
         return 'Simulator & Converter';
       case '/simulate':
         return 'Simulation Laboratory';
-      case '/tests':
-        return 'Test Results & Verification';
       case '/docs':
         return 'Visual Learning Lab';
       default:

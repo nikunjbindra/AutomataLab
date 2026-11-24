@@ -1,302 +1,78 @@
-import React, { useState, useMemo, useEffect, useCallback } from 'react';
-import type { AnyMachine, MealyMachine, MooreMachine } from '@automatalab/contracts';
-import {
-  simulateMealy,
-  simulateMoore,
-  verifyEquivalenceProductMachine,
-} from '@automatalab/automata';
-import { TapeDisplay } from '../learning/TapeDisplay.js';
+import { useEffect, useMemo, useState } from 'react';
+import type { AnyMachine } from '@automatalab/contracts';
+import { simulateMealy, simulateMoore, verifyEquivalenceProductMachine } from '@automatalab/automata';
 import { PlaybackBar } from '../learning/PlaybackBar.js';
-import { CheckCircle2, AlertTriangle, ShieldCheck } from 'lucide-react';
+import { DiagramSvg } from '../learning/DiagramSvg.js';
 
-interface DualSimulationPanelProps {
+interface Props {
   sourceMachine: AnyMachine;
   convertedMachine: AnyMachine;
-  onActiveStatesChange?: (sourceState: string, targetState: string) => void;
-  className?: string;
+  showDiagram?: boolean;
+  onActiveStatesChange?: (source: string, target: string) => void;
 }
 
-export const DualSimulationPanel: React.FC<DualSimulationPanelProps> = ({
-  sourceMachine,
-  convertedMachine,
-  onActiveStatesChange,
-  className = '',
-}) => {
-  const [inputStr, setInputStr] = useState('1100');
-  const [currentStep, setCurrentStep] = useState(0);
-  const [isPlaying, setIsPlaying] = useState(false);
+function trace(machine: AnyMachine, input: string) {
+  return machine.type === 'mealy' ? simulateMealy(machine, input) : simulateMoore(machine, input);
+}
+
+export function DualSimulationPanel({ sourceMachine, convertedMachine, showDiagram, onActiveStatesChange }: Props) {
+  const binary = ['0', '1'].every(symbol => sourceMachine.alphabet.includes(symbol));
+  const [input, setInput] = useState(binary ? '1100' : sourceMachine.alphabet[0]);
+  const [step, setStep] = useState(0);
+  const [playing, play] = useState(false);
   const [speed, setSpeed] = useState(1);
-
-  // Run simulations
-  const sourceTrace = useMemo(() => {
-    if (sourceMachine.type === 'moore') {
-      return simulateMoore(sourceMachine as MooreMachine, inputStr);
-    }
-    return simulateMealy(sourceMachine as MealyMachine, inputStr);
-  }, [sourceMachine, inputStr]);
-
-  const targetTrace = useMemo(() => {
-    if (convertedMachine.type === 'moore') {
-      return simulateMoore(convertedMachine as MooreMachine, inputStr);
-    }
-    return simulateMealy(convertedMachine as MealyMachine, inputStr);
-  }, [convertedMachine, inputStr]);
-
-  // Product-machine formal equivalence test
-  const equivalenceResult = useMemo(() => {
+  const run = useMemo(() => {
     try {
-      return verifyEquivalenceProductMachine(sourceMachine, convertedMachine);
-    } catch {
-      return { isEquivalent: true, statesExplored: 0 };
+      return { source: trace(sourceMachine, input), target: trace(convertedMachine, input) };
+    } catch (error) {
+      return { error: error instanceof Error ? error.message : 'Unable to simulate this input.' };
     }
+  }, [sourceMachine, convertedMachine, input]);
+  const proof = useMemo(() => {
+    try { return verifyEquivalenceProductMachine(sourceMachine, convertedMachine); }
+    catch { return null; }
   }, [sourceMachine, convertedMachine]);
-
-  const totalSteps = inputStr.length;
-
-  // Auto-play timer
+  const total = run.source?.inputSequence.length ?? 0;
+  const current = Math.min(step, total);
+  const from = run.source?.visitedStates[current];
+  const to = run.target?.visitedStates[current];
   useEffect(() => {
-    if (!isPlaying) return;
-    if (currentStep >= totalSteps) {
-      setIsPlaying(false);
-      return;
-    }
-
-    const interval = 1200 / speed;
-    const timer = setTimeout(() => {
-      setCurrentStep((prev) => {
-        if (prev >= totalSteps) {
-          setIsPlaying(false);
-          return prev;
-        }
-        return prev + 1;
-      });
-    }, interval);
-
+    if (from && to) onActiveStatesChange?.(from, to);
+  }, [from, to, onActiveStatesChange]);
+  useEffect(() => {
+    if (!playing) return;
+    if (current >= total) { play(false); return; }
+    const timer = setTimeout(() => setStep(current + 1), 1000 / speed);
     return () => clearTimeout(timer);
-  }, [isPlaying, currentStep, totalSteps, speed]);
-
-  const sourceStep = sourceTrace.steps[currentStep] || sourceTrace.steps[0];
-  const targetStep = targetTrace.steps[currentStep] || targetTrace.steps[0];
-
-  // Notify parent of active states
-  useEffect(() => {
-    if (onActiveStatesChange) {
-      onActiveStatesChange(sourceStep.currentState, targetStep.currentState);
-    }
-  }, [sourceStep.currentState, targetStep.currentState, onActiveStatesChange]);
-
-  const handlePlayToggle = useCallback(() => {
-    if (currentStep >= totalSteps) {
-      setCurrentStep(0);
-      setIsPlaying(true);
-    } else {
-      setIsPlaying((prev) => !prev);
-    }
-  }, [currentStep, totalSteps]);
-
-  const handleStepNext = useCallback(() => {
-    setIsPlaying(false);
-    setCurrentStep((prev) => Math.min(prev + 1, totalSteps));
-  }, [totalSteps]);
-
-  const handleStepPrev = useCallback(() => {
-    setIsPlaying(false);
-    setCurrentStep((prev) => Math.max(prev - 1, 0));
-  }, []);
-
-  const handleReset = useCallback(() => {
-    setIsPlaying(false);
-    setCurrentStep(0);
-  }, []);
-
-  // Compute aligned output arrays for tape
-  const sourceOutputs = useMemo(() => {
-    if (sourceMachine.type === 'moore') {
-      return sourceTrace.steps.slice(0, currentStep + 1).map((s) => s.emittedOutput || 'ε');
-    }
-    return sourceTrace.steps.slice(1, currentStep + 1).map((s) => s.emittedOutput || '');
-  }, [sourceMachine.type, sourceTrace.steps, currentStep]);
-
-  const targetOutputs = useMemo(() => {
-    if (convertedMachine.type === 'moore') {
-      return targetTrace.steps.slice(0, currentStep + 1).map((s) => s.emittedOutput || 'ε');
-    }
-    return targetTrace.steps.slice(1, currentStep + 1).map((s) => s.emittedOutput || '');
-  }, [convertedMachine.type, targetTrace.steps, currentStep]);
-
-  // Aligned equivalence check for current input
-  const areOutputsAligned = useMemo(() => {
-    const sOut = sourceTrace.outputSequence;
-    const tOut = targetTrace.outputSequence;
-
-    if (sourceMachine.type === 'mealy' && convertedMachine.type === 'moore') {
-      // Strip initial Moore output token
-      return JSON.stringify(sOut) === JSON.stringify(tOut.slice(1));
-    } else if (sourceMachine.type === 'moore' && convertedMachine.type === 'mealy') {
-      // Strip initial Moore output token
-      return JSON.stringify(sOut.slice(1)) === JSON.stringify(tOut);
-    }
-    return JSON.stringify(sOut) === JSON.stringify(tOut);
-  }, [sourceMachine.type, convertedMachine.type, sourceTrace.outputSequence, targetTrace.outputSequence]);
-
-  return (
-    <div className={`rounded-xl border border-border bg-surface p-4 space-y-4 font-mono text-xs shadow-subtle ${className}`}>
-      {/* Simulation Top Bar */}
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border-subtle pb-3">
-        <div className="flex items-center gap-2">
-          <ShieldCheck className="w-4 h-4 text-accent-blue" />
-          <span className="font-bold text-foreground text-xs uppercase tracking-wider">
-            Synchronous Dual Simulation & Equivalence Verification
-          </span>
-        </div>
-
-        {/* Equivalence Verdict Badge */}
-        <div className="flex items-center gap-2">
-          {equivalenceResult.isEquivalent ? (
-            <span className="px-2.5 py-1 rounded-md bg-emerald-500/15 border border-emerald-500/30 text-accent-emerald font-bold text-[11px] flex items-center gap-1.5">
-              <CheckCircle2 className="w-3.5 h-3.5" />
-              <span>Mathematically Equivalent (Q_A × Q_B Proven)</span>
-            </span>
-          ) : (
-            <span className="px-2.5 py-1 rounded-md bg-rose-500/15 border border-rose-500/30 text-accent-rose font-bold text-[11px] flex items-center gap-1.5">
-              <AlertTriangle className="w-3.5 h-3.5" />
-              <span>Mismatch Found</span>
-            </span>
-          )}
-        </div>
-      </div>
-
-      {/* Input Sequence Controls */}
-      <div className="flex flex-wrap items-center justify-between gap-3 p-3 rounded-lg bg-surface-elevated/40 border border-border-subtle">
-        <div className="flex items-center gap-2">
-          <label htmlFor="test-input-string" className="font-bold text-foreground-muted text-[11px]">Test String (w):</label>
-          {['1100', '1010', '0101', '1111', '0000'].map((seq) => (
-            <button
-              key={seq}
-              type="button"
-              onClick={() => {
-                setInputStr(seq);
-                setCurrentStep(0);
-                setIsPlaying(false);
-              }}
-              className={`px-2 py-0.5 rounded text-[11px] font-bold border transition-colors ${
-                inputStr === seq
-                  ? 'bg-accent-blue text-white border-accent-blue'
-                  : 'bg-surface border-border text-foreground-muted hover:text-foreground'
-              }`}
-            >
-              {seq}
-            </button>
-          ))}
-          <input
-            id="test-input-string"
-            type="text"
-            value={inputStr}
-            maxLength={10}
-            onChange={(e) => {
-              const cleaned = e.target.value.replace(/[^0-9a-zA-Z]/g, '');
-              setInputStr(cleaned);
-              setCurrentStep(0);
-              setIsPlaying(false);
-            }}
-            className="w-24 px-2 py-0.5 rounded border border-border bg-surface text-foreground font-bold text-xs"
-          />
-        </div>
-
-        <div className="text-[11px] text-foreground-muted">
-          Active step: <strong className="text-foreground">{currentStep} / {totalSteps}</strong> | Current input:{' '}
-          <strong className="text-accent-blue">
-            {currentStep > 0 ? `'${inputStr[currentStep - 1]}'` : 'Ready'}
-          </strong>
-        </div>
-      </div>
-
-      {/* Dual Side-by-Side Output Tapes */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {/* Source Tape */}
-        <div className="space-y-1.5 p-3 rounded-lg border border-border-subtle bg-surface-elevated/30">
-          <div className="flex items-center justify-between text-[11px]">
-            <span className="font-bold text-foreground">
-              Original {sourceMachine.type.toUpperCase()}: State{' '}
-              <span className="text-accent-blue font-bold">[{sourceStep.currentState}]</span>
-            </span>
-            <span className="text-foreground-muted">
-              Out: {sourceTrace.outputSequence.join('') || '—'}
-            </span>
-          </div>
-          <TapeDisplay
-            inputSymbols={inputStr.split('')}
-            headIndex={currentStep > 0 ? currentStep - 1 : -1}
-            outputSymbols={sourceOutputs}
-            machineType={sourceMachine.type}
-            showInitialMooreOutput={sourceMachine.type === 'moore'}
-          />
-        </div>
-
-        {/* Converted Tape */}
-        <div className="space-y-1.5 p-3 rounded-lg border border-border-subtle bg-surface-elevated/30">
-          <div className="flex items-center justify-between text-[11px]">
-            <span className="font-bold text-foreground">
-              Converted {convertedMachine.type.toUpperCase()}: State{' '}
-              <span className="text-accent-indigo font-bold">[{targetStep.currentState}]</span>
-            </span>
-            <span className="text-foreground-muted">
-              Out: {convertedMachine.type === 'moore' ? `ε·${targetTrace.outputSequence.slice(1).join('')}` : targetTrace.outputSequence.join('')}
-            </span>
-          </div>
-          <TapeDisplay
-            inputSymbols={inputStr.split('')}
-            headIndex={currentStep > 0 ? currentStep - 1 : -1}
-            outputSymbols={targetOutputs}
-            machineType={convertedMachine.type}
-            showInitialMooreOutput={convertedMachine.type === 'moore'}
-          />
-        </div>
-      </div>
-
-      {/* Live Output Alignment Badge */}
-      <div
-        className={`p-2.5 rounded-lg border text-[11px] flex items-center justify-between ${
-          areOutputsAligned
-            ? 'border-emerald-500/30 bg-emerald-500/10 text-accent-emerald'
-            : 'border-rose-500/30 bg-rose-500/10 text-accent-rose'
-        }`}
-      >
-        <div className="flex items-center gap-2">
-          {areOutputsAligned ? (
-            <CheckCircle2 className="w-4 h-4" />
-          ) : (
-            <AlertTriangle className="w-4 h-4" />
-          )}
-          <span>
-            {areOutputsAligned
-              ? `Synchronous Output Alignment Verified for input "${inputStr}" (Mealy = Moore stripped of initial ε)`
-              : `Output Mismatch detected on input "${inputStr}"!`}
-          </span>
-        </div>
-        <span className="font-bold text-[10px]">
-          {areOutputsAligned ? 'VERIFIED' : 'FAILED'}
-        </span>
-      </div>
-
-      {/* Playback Controls */}
-      <PlaybackBar
-        currentStep={currentStep}
-        totalSteps={totalSteps}
-        isPlaying={isPlaying}
-        speed={speed}
-        onPlayToggle={handlePlayToggle}
-        onStepNext={handleStepNext}
-        onStepPrev={handleStepPrev}
-        onReset={handleReset}
-        onSpeedChange={setSpeed}
-        onSeek={setCurrentStep}
-        caption={
-          currentStep === 0
-            ? 'Both machines initialized in start states. Ready to consume input.'
-            : `t=${currentStep}: Consumed '${inputStr[currentStep - 1]}'. Source entered '${sourceStep.currentState}' (out: '${sourceStep.emittedOutput || '—'}'); Target entered '${targetStep.currentState}' (out: '${targetStep.emittedOutput || '—'}').`
-        }
-      />
+  }, [playing, current, total, speed]);
+  function seek(index: number) { play(false); setStep(index); }
+  function changeInput(value: string) { setInput(value); seek(0); }
+  return <section className="tape-sheet">
+    <div className="tape-config"><label htmlFor="test-input-string">Input string</label>
+      <input id="test-input-string" value={input} maxLength={128} onChange={event => changeInput(event.target.value)} />
+      <span>Alphabet · {sourceMachine.alphabet.join(', ')}</span>
+      {(binary ? ['1100', '101', ''] : [sourceMachine.alphabet[0], '']).map(value =>
+        <button key={value} onClick={() => changeInput(value)}>{value || 'Empty input'}</button>)}
     </div>
-  );
-};
+    {run.error && <p role="alert">{run.error}</p>}
+    {run.source && run.target && <>
+      {showDiagram && <DiagramSvg machine={sourceMachine} activeState={from} badge={sourceMachine.name} />}
+      <PlaybackBar currentStep={current} totalSteps={total} isPlaying={playing} speed={speed}
+        onSpeedChange={setSpeed} onSeek={seek} onReset={() => seek(0)}
+        onStepPrev={() => seek(Math.max(0, current - 1))} onStepNext={() => seek(Math.min(total, current + 1))}
+        onPlayToggle={() => { if (current === total) setStep(0); play(!playing && total > 0); }}
+        caption={current ? 'After input ' + current + ', the source is in ' + from + ' and the converted machine is in ' + to + '.' : 'At Start, only the Moore machine has a state output.'} />
+      <div className="overflow-x-auto"><table className="trace-table"><caption>Aligned execution trace</caption>
+        <thead><tr><th scope="col">Input</th>{['Start', ...run.source.inputSequence].map((symbol, i) =>
+          <th scope="col" key={i} data-active={i === current}>{symbol}</th>)}</tr></thead>
+        <tbody>{[run.source, run.target].map((result, i) =>
+          <tr key={i}><th scope="row">{i ? convertedMachine.type : sourceMachine.type} output</th>
+            {result.steps.map((record, j) => <td key={j} data-active={j === current}>{record.emittedOutput ?? '—'}</td>)}</tr>)}
+          <tr><th scope="row">Source state</th>{run.source.visitedStates.map((state, j) =>
+            <td key={j} data-active={j === current}>{state}</td>)}</tr>
+        </tbody></table></div>
+    </>}
+    <details><summary>Equivalence check · {proof ? proof.isEquivalent ? 'Equivalent' : 'Different outputs' : 'Unavailable'}</summary>
+      <p>{proof?.explanation ?? 'The machines could not be verified.'}</p></details>
+  </section>;
+}
