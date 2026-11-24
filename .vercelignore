@@ -1,8 +1,0 @@
-**/*.db
-**/*.db-*
-**/.env
-**/.env.local
-**/.env.*.local
-**/node_modules
-**/dist
-**/*.tsbuildinfo
