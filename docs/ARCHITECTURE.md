@@ -109,7 +109,6 @@ AutomataLab/
 │       └── package.json
 │
 ├── docs/                        # Architecture, specs, and design guidelines
-├── AGENTS.md                    # Permanent engineering guardrails
 ├── .gitignore
 ├── .env.example
 ├── package.json                 # Monorepo root scripts & workspaces definition

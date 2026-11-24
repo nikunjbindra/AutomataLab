@@ -100,7 +100,6 @@ AutomataLab/
 ├── docs/                # Architecture, design system, project specifications
 ├── .gitignore
 ├── .env.example
-├── AGENTS.md
 ├── package.json
 └── README.md
 ```

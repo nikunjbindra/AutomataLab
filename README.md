@@ -29,8 +29,7 @@ AutomataLab/
 ├── packages/
 │   ├── automata/        # Pure algorithmic conversion & simulation library
 │   └── contracts/       # Shared TypeScript types & Zod validation schemas
-├── docs/                # Architecture, design system, and project specifications
-└── AGENTS.md            # Permanent engineering guardrails
+└── docs/                # Architecture, design system, and project specifications
 ```
 
 ---
@@ -76,10 +75,6 @@ The frontend (`apps/web`) development server proxies all `/api/*` calls to the b
 
 ---
 
-## Engineering Rules
-
-Permanent architectural principles and code standards are documented in [AGENTS.md](AGENTS.md). All contributors must uphold these invariants.
-
 ---
 
 ## Documentation
@@ -87,4 +82,3 @@ Permanent architectural principles and code standards are documented in [AGENTS.
 - [Project Specification](docs/PROJECT_SPEC.md)
 - [System Architecture](docs/ARCHITECTURE.md)
 - [Design System & UI Specs](docs/DESIGN_SYSTEM.md)
-- [Engineering Rules](AGENTS.md)
