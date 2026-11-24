@@ -5,14 +5,20 @@ import * as dotenv from 'dotenv';
 
 dotenv.config();
 
-const defaultUrl = process.env.DATABASE_URL || 'file:./automata.db';
+function databaseUrl(): string {
+  const url = process.env.TURSO_DATABASE_URL || process.env.DATABASE_URL;
+  if (process.env.VERCEL && (!url || !/^(libsql|https):\/\//.test(url))) {
+    throw new Error('A hosted database URL is required on Vercel.');
+  }
+  return url || 'file:./automata.db';
+}
 
-export function createDatabaseConnection(url: string = defaultUrl): {
+export function createDatabaseConnection(url: string = databaseUrl()): {
   client: Client;
   db: LibSQLDatabase<typeof schema>;
   initDb: () => Promise<void>;
 } {
-  const client = createClient({ url });
+  const client = createClient({ url, authToken: process.env.TURSO_AUTH_TOKEN || process.env.TURSO_DATABASE_AUTH_TOKEN });
   const db = drizzle(client, { schema });
 
   const initDb = async (): Promise<void> => {
