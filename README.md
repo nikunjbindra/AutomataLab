@@ -13,7 +13,13 @@ Key capabilities:
 - **Equivalence Verification**: Product-machine BFS/DFS verification engine to prove or disprove machine equivalence and generate minimal counterexamples.
 - **Step-by-Step Mathematical Explanation**: Explains every transformation stage with formal reasons and state mapping tables.
 - **Interactive Simulation**: Synchronous tape stepper with active state graph and table highlights.
-- **Guided Notebook** opens on the interactive state-splitting lesson. Use Machines for saved work, Convert for construction stages, and Simulate for aligned execution traces.
+- **Guided Notebook** starts with **Mealy vs Moore**. Follow the same input through both diagrams to see where each machine produces its output.
+
+### Try a machine of your own
+
+1. Open **Builder**, define your states and transitions, then select **Save**.
+2. Open **Convert**, choose your saved machine, and select **Convert Machine**. AutomataLab saves the converted version alongside the original in **Machines**.
+3. Open **Simulate**, choose either saved machine, and step through an input string to follow its states and outputs.
 
 ---
 
