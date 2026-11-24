@@ -68,7 +68,7 @@ export function convertMealyToMoore(
   });
 
   // Step 3: Create separate Moore states for distinct (state, output) pairs
-  // Map: `${origState}:::${output}` -> new Moore state name
+  // Map: JSON.stringify([origState, output]) -> new Moore state name
   const stateOutputToMooreState = new Map<string, string>();
   const stateMapping: Record<string, string[]> = {};
   const mooreStates: string[] = [];
@@ -78,23 +78,19 @@ export function convertMealyToMoore(
     stateMapping[s] = [];
     const outputs = incomingOutputs.get(s)!;
 
-    if (outputs.size === 0) {
-      // State has no incoming transitions
-      // If it's not the initial state or even if it is, assign a fallback state
-      const fallbackOutput = mealy.outputAlphabet[0] || '0';
-      const stateName = `${s}_${fallbackOutput}`;
-      stateOutputToMooreState.set(`${s}:::${fallbackOutput}`, stateName);
-      mooreStates.push(stateName);
-      stateOutputs[stateName] = fallbackOutput;
-      stateMapping[s].push(stateName);
-    } else {
-      for (const out of Array.from(outputs).sort()) {
-        const stateName = `${s}_${out}`;
-        stateOutputToMooreState.set(`${s}:::${out}`, stateName);
-        mooreStates.push(stateName);
-        stateOutputs[stateName] = out;
-        stateMapping[s].push(stateName);
+    const values = outputs.size ? Array.from(outputs).sort() : [mealy.outputAlphabet[0] || '0'];
+    for (const output of values) {
+      const baseName = (s + '_' + output).slice(0, 50);
+      let stateName = baseName;
+      let suffix = 2;
+      while (mooreStates.includes(stateName)) {
+        const tag = '_' + suffix++;
+        stateName = baseName.slice(0, 50 - tag.length) + tag;
       }
+      stateOutputToMooreState.set(JSON.stringify([s, output]), stateName);
+      mooreStates.push(stateName);
+      stateOutputs[stateName] = output;
+      stateMapping[s].push(stateName);
     }
   }
 
@@ -126,10 +122,10 @@ export function convertMealyToMoore(
   });
 
   // Step 5: Wire transitions correctly
-  // Map original transitions for fast lookup: `${fromState}:::${inputSymbol}` -> { toState, outputSymbol }
+  // Map original transitions for fast lookup: JSON.stringify([fromState, inputSymbol]) -> { toState, outputSymbol }
   const mealyTransitionMap = new Map<string, { toState: string; outputSymbol: string }>();
   for (const t of mealy.transitions) {
-    mealyTransitionMap.set(`${t.fromState}:::${t.inputSymbol}`, {
+    mealyTransitionMap.set(JSON.stringify([t.fromState, t.inputSymbol]), {
       toState: t.toState,
       outputSymbol: t.outputSymbol,
     });
@@ -139,9 +135,9 @@ export function convertMealyToMoore(
 
   // 5a. Wire transitions from synthetic initial state S
   for (const a of mealy.alphabet) {
-    const orig = mealyTransitionMap.get(`${mealy.initialState}:::${a}`);
+    const orig = mealyTransitionMap.get(JSON.stringify([mealy.initialState, a]));
     if (orig) {
-      const targetMooreState = stateOutputToMooreState.get(`${orig.toState}:::${orig.outputSymbol}`);
+      const targetMooreState = stateOutputToMooreState.get(JSON.stringify([orig.toState, orig.outputSymbol]));
       if (targetMooreState) {
         mooreTransitions.push({
           fromState: syntheticInitial,
@@ -154,11 +150,11 @@ export function convertMealyToMoore(
 
   // 5b. Wire transitions from each split state q_y
   for (const [key, fromMooreState] of stateOutputToMooreState.entries()) {
-    const [origState] = key.split(':::');
+    const origState: string = JSON.parse(key)[0];
     for (const a of mealy.alphabet) {
-      const orig = mealyTransitionMap.get(`${origState}:::${a}`);
+      const orig = mealyTransitionMap.get(JSON.stringify([origState, a]));
       if (orig) {
-        const targetMooreState = stateOutputToMooreState.get(`${orig.toState}:::${orig.outputSymbol}`);
+        const targetMooreState = stateOutputToMooreState.get(JSON.stringify([orig.toState, orig.outputSymbol]));
         if (targetMooreState) {
           mooreTransitions.push({
             fromState: fromMooreState,

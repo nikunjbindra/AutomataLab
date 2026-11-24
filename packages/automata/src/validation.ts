@@ -57,7 +57,7 @@ export function validateMealyMachine(machine: MealyMachine): ValidationResult {
 
   for (let i = 0; i < machine.transitions.length; i++) {
     const t = machine.transitions[i];
-    const key = `${t.fromState}:::${t.inputSymbol}`;
+    const key = JSON.stringify([t.fromState, t.inputSymbol]);
 
     if (transitionKeys.has(key)) {
       isDeterministic = false;
@@ -111,7 +111,7 @@ export function validateMealyMachine(machine: MealyMachine): ValidationResult {
   let isComplete = true;
   for (const s of machine.states) {
     for (const a of machine.alphabet) {
-      if (!transitionKeys.has(`${s}:::${a}`)) {
+      if (!transitionKeys.has(JSON.stringify([s, a]))) {
         isComplete = false;
         issues.push({
           severity: 'warning',
@@ -217,7 +217,7 @@ export function validateMooreMachine(machine: MooreMachine): ValidationResult {
 
   for (let i = 0; i < machine.transitions.length; i++) {
     const t = machine.transitions[i];
-    const key = `${t.fromState}:::${t.inputSymbol}`;
+    const key = JSON.stringify([t.fromState, t.inputSymbol]);
 
     if (transitionKeys.has(key)) {
       isDeterministic = false;
@@ -262,7 +262,7 @@ export function validateMooreMachine(machine: MooreMachine): ValidationResult {
   let isComplete = true;
   for (const s of machine.states) {
     for (const a of machine.alphabet) {
-      if (!transitionKeys.has(`${s}:::${a}`)) {
+      if (!transitionKeys.has(JSON.stringify([s, a]))) {
         isComplete = false;
         issues.push({
           severity: 'warning',

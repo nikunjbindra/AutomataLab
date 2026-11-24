@@ -107,8 +107,8 @@ export function verifyEquivalenceProductMachine(
   const totalPairSpaceSize = machineA.states.length * machineB.states.length;
 
   // Build transition lookup tables
-  // For Mealy: `${state}:::${sym}` -> { toState, output }
-  // For Moore: `${state}:::${sym}` -> toState
+  // For Mealy: JSON.stringify([state, sym]) -> { toState, output }
+  // For Moore: JSON.stringify([state, sym]) -> toState
   const mealyTransA = machineA.type === 'mealy' ? buildMealyTransitionMap(machineA) : null;
   const mooreTransA = machineA.type === 'moore' ? buildMooreTransitionMap(machineA) : null;
 
@@ -155,7 +155,7 @@ export function verifyEquivalenceProductMachine(
   ];
 
   const visitedPairs = new Set<string>();
-  visitedPairs.add(`${machineA.initialState}:::${machineB.initialState}`);
+  visitedPairs.add(JSON.stringify([machineA.initialState, machineB.initialState]));
 
   while (queue.length > 0) {
     const { stateA, stateB, path } = queue.shift()!;
@@ -168,14 +168,14 @@ export function verifyEquivalenceProductMachine(
 
       // Machine A step
       if (machineA.type === 'mealy') {
-        const trans = mealyTransA!.get(`${stateA}:::${sym}`);
+        const trans = mealyTransA!.get(JSON.stringify([stateA, sym]));
         if (!trans) {
           throw new Error(`Incomplete transition in Machine A for state '${stateA}' on symbol '${sym}'.`);
         }
         nextStateA = trans.toState;
         outputA = trans.output;
       } else {
-        const toState = mooreTransA!.get(`${stateA}:::${sym}`);
+        const toState = mooreTransA!.get(JSON.stringify([stateA, sym]));
         if (!toState) {
           throw new Error(`Incomplete transition in Machine A for state '${stateA}' on symbol '${sym}'.`);
         }
@@ -185,14 +185,14 @@ export function verifyEquivalenceProductMachine(
 
       // Machine B step
       if (machineB.type === 'mealy') {
-        const trans = mealyTransB!.get(`${stateB}:::${sym}`);
+        const trans = mealyTransB!.get(JSON.stringify([stateB, sym]));
         if (!trans) {
           throw new Error(`Incomplete transition in Machine B for state '${stateB}' on symbol '${sym}'.`);
         }
         nextStateB = trans.toState;
         outputB = trans.output;
       } else {
-        const toState = mooreTransB!.get(`${stateB}:::${sym}`);
+        const toState = mooreTransB!.get(JSON.stringify([stateB, sym]));
         if (!toState) {
           throw new Error(`Incomplete transition in Machine B for state '${stateB}' on symbol '${sym}'.`);
         }
@@ -222,7 +222,7 @@ export function verifyEquivalenceProductMachine(
       }
 
       // Next state pair in product automaton
-      const nextPairKey = `${nextStateA}:::${nextStateB}`;
+      const nextPairKey = JSON.stringify([nextStateA, nextStateB]);
       if (!visitedPairs.has(nextPairKey)) {
         visitedPairs.add(nextPairKey);
         queue.push({
@@ -246,7 +246,7 @@ export function verifyEquivalenceProductMachine(
 function buildMealyTransitionMap(mealy: MealyMachine): Map<string, { toState: string; output: string }> {
   const map = new Map<string, { toState: string; output: string }>();
   for (const t of mealy.transitions) {
-    map.set(`${t.fromState}:::${t.inputSymbol}`, {
+    map.set(JSON.stringify([t.fromState, t.inputSymbol]), {
       toState: t.toState,
       output: t.outputSymbol,
     });
@@ -257,7 +257,7 @@ function buildMealyTransitionMap(mealy: MealyMachine): Map<string, { toState: st
 function buildMooreTransitionMap(moore: MooreMachine): Map<string, string> {
   const map = new Map<string, string>();
   for (const t of moore.transitions) {
-    map.set(`${t.fromState}:::${t.inputSymbol}`, t.toState);
+    map.set(JSON.stringify([t.fromState, t.inputSymbol]), t.toState);
   }
   return map;
 }

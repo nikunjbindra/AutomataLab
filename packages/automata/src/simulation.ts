@@ -45,10 +45,10 @@ export function simulateMealy(
 ): SimulationTrace {
   const inputSequence = parseInputSequence(rawInput, machine.alphabet);
 
-  // Transition lookup map: `${fromState}:::${inputSymbol}` -> { toState, outputSymbol }
+  // Transition lookup map: JSON.stringify([fromState, inputSymbol]) -> { toState, outputSymbol }
   const transitionMap = new Map<string, { toState: string; outputSymbol: string }>();
   for (const t of machine.transitions) {
-    transitionMap.set(`${t.fromState}:::${t.inputSymbol}`, {
+    transitionMap.set(JSON.stringify([t.fromState, t.inputSymbol]), {
       toState: t.toState,
       outputSymbol: t.outputSymbol,
     });
@@ -71,7 +71,7 @@ export function simulateMealy(
 
   for (let i = 0; i < inputSequence.length; i++) {
     const sym = inputSequence[i];
-    const trans = transitionMap.get(`${currentState}:::${sym}`);
+    const trans = transitionMap.get(JSON.stringify([currentState, sym]));
 
     if (!trans) {
       throw new Error(
@@ -116,10 +116,10 @@ export function simulateMoore(
 ): SimulationTrace {
   const inputSequence = parseInputSequence(rawInput, machine.alphabet);
 
-  // Transition lookup map: `${fromState}:::${inputSymbol}` -> toState
+  // Transition lookup map: JSON.stringify([fromState, inputSymbol]) -> toState
   const transitionMap = new Map<string, string>();
   for (const t of machine.transitions) {
-    transitionMap.set(`${t.fromState}:::${t.inputSymbol}`, t.toState);
+    transitionMap.set(JSON.stringify([t.fromState, t.inputSymbol]), t.toState);
   }
 
   let currentState = machine.initialState;
@@ -145,7 +145,7 @@ export function simulateMoore(
 
   for (let i = 0; i < inputSequence.length; i++) {
     const sym = inputSequence[i];
-    const nextState = transitionMap.get(`${currentState}:::${sym}`);
+    const nextState = transitionMap.get(JSON.stringify([currentState, sym]));
 
     if (!nextState) {
       throw new Error(
